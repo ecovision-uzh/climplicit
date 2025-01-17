@@ -1,0 +1,2 @@
+/var/lib/slurm/slurmd/job15619254/slurm_script: line 12: 1919398 Killed                  python src/train.py experiment=lcd logger=wandb
+slurmstepd: error: Detected 1 oom_kill event in StepId=15619254.batch. Some of the step tasks have been OOM Killed.
