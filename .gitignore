@@ -4,6 +4,7 @@ src/utils/test_cases/data/
 *.csv
 *.xlsx
 *.tif
+*.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
