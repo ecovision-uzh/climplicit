@@ -1,0 +1,7 @@
+_target_: src.data.chelsaCLIP_datamodule.ChelsaCLIPDataModule
+climatology_dir: ${paths.climatology_dir}
+input_dir: ${paths.input_dir}
+batch_size: 32000
+num_workers: 15
+pin_memory: False
+months: "march"

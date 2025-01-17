@@ -1,0 +1,143 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: chelsaCLIP
+  - override /model: learn_chelsa_directly
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: wandb
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+#ckpt_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_009-v38.ckpt
+
+tags: ["learn CHELSA directly"]
+
+seed: 42
+
+trainer:
+  min_epochs: 1
+  max_epochs: 100
+  gradient_clip_val: 0.5
+
+data:
+  batch_size: 4096 #8192
+  climatology_dir: /shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010_numpy/
+  input_dir: /shares/wegner.ics.uzh/CHELSA/input/
+  skip_samples: 1
+  use_all_for_training: true
+  provide_chelsa_similarity_matrix: false
+  local_multi_sampling: false
+  sampler: no_samp
+  whiten_with_pca: true
+
+model:
+  optimizer:
+    _target_: torch.optim.Adam
+    _partial_: true
+    lr: 0.0001
+    weight_decay: 0.0
+  scheduler:
+    _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+    _partial_: true
+    mode: min
+    factor: 0.2
+    patience: 2
+  compile: false
+  location_encoder:
+    _target_: src.models.components.loc_encoder.SirenNet
+    dim_in: 386
+    dim_hidden: 1024
+    dim_out: 11
+    num_layers: 12
+    dropout: false
+  pos_embedding:
+    _target_: src.utils.positional_encoding.spheregrid.SphereGridSpatialRelationEncoder
+    coord_dim: 2
+    frequency_num: 64
+    max_radius: 360
+    min_radius: 0.0003
+    freq_init: "geometric"
+    device: "cuda"
+  loss_fn:
+    _target_: torch.nn.MSELoss #L1Loss
+  test_cases:
+    test/chr:
+      _target_: src.utils.test_cases.downstreams.chelsa_regression.CHR
+      ptc_path: "/shares/wegner.ics.uzh/CHELSA/Switzerland/input/point_to_coord.npy"
+      chelsa_path: "/shares/wegner.ics.uzh/CHELSA/Switzerland/1981-2010_numpy/03_monthly_float16.npy"
+      mlp_input_len: 11
+      use_months: True
+      pass_month_to_forward: False
+      iterations: 3
+      map_pca: True
+      verbose: True
+    #test/sw_sdm:
+    #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
+    #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'
+    #  mlp_input_len: ${model.location_encoder.dim_out}
+    #  use_months: True
+    #  verbose : false
+    #  most_common_species_map: True
+    test/pca_zur:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: zur
+    test/pca_swi:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: swi_tc
+    test/pca_euro:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: euro
+    test/pca:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: world
+    test/zur_grad:
+      _target_: src.utils.test_cases.zurich_gradient_mean.ZGM
+      months:
+        - 3
+        - 9
+    #test/statistics:
+    #  _target_: src.utils.test_cases.output_statistics.OutputStatistics
+    #  month: 3
+    #  use_training_coordinates: false
+
+callbacks:
+  early_stopping:
+    monitor: "val/loss"
+    patience: 6
+    mode: "min"
+
+  model_checkpoint:
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "epoch_{epoch:03d}"
+    monitor: "val/loss"
+    mode: "min"
+    save_last: True
+    auto_insert_metric_name: False
+
+logger:
+  tags: ${tags}
+  group: "learn CHELSA directly"
+  wandb:
+    name: "lcd ${model.location_encoder.dim_hidden}dh ${model.location_encoder.num_layers}hl"
+    project: "learn CHELSA directly"

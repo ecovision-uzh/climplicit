@@ -1,0 +1,37 @@
+_target_: src.models.learn_chelsa_directly_module.LearnChelsaDirectlyModule
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.0005
+  weight_decay: 0.0
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.2
+  patience: 2
+
+location_encoder:
+  _target_: src.models.components.loc_encoder.SirenNet
+  dim_in: 386
+  dim_hidden: 2048
+  dim_out: 11
+  num_layers: 4
+  dropout: False
+
+loss_fn:
+    _target_: torch.nn.MSELoss #L1Loss
+
+pos_embedding:
+  _target_: src.utils.positional_encoding.spheregrid.SphereGridSpatialRelationEncoder
+  coord_dim: 2
+  frequency_num: 64
+  max_radius: 360
+  min_radius: 0.0003
+  freq_init: "geometric"
+  device: "cuda"
+
+# compile model for faster training with pytorch 2.0
+compile: false

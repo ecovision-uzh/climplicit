@@ -1,0 +1,115 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: chelsaCLIP
+  - override /model: chelsaCLIP
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: wandb
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["chelsaCLIP"]
+
+seed: 42
+
+train: False
+test: True
+
+logger:
+  tags: ${tags}
+  group: "chelsaCLIP"
+  wandb:
+    name: "cclip base"
+    project: "chelsaCLIP tests"
+
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_046-v3.ckpt #0.99sim wwp
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_099-v46.ckpt  #wwp
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_051-v1.ckpt #0.95sim
+
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_098-v5.ckpt #naive tiny
+checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_099-v45.ckpt  #naive base
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_093.ckpt  #naive large
+
+data:
+  batch_size: 4096
+  climatology_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/1981-2010_numpy/
+  input_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/input/
+
+model:
+  location_encoder:
+    _target_: src.models.components.loc_encoder.SirenNet
+    dim_in: 386
+    dim_hidden: 1024
+    dim_out: 256
+    num_layers: 4
+    dropout: false
+  pos_embedding:
+    _target_: src.utils.positional_encoding.spheregrid.SphereGridSpatialRelationEncoder
+    coord_dim: 2
+    frequency_num: 64
+    max_radius: 360
+    min_radius: 0.0003
+    freq_init: "geometric"
+    device: "cuda"
+  test_cases:
+    test/dsts:
+      _target_: src.utils.test_cases.dstasks.DSTs
+      mlp_input_len: 256
+      use_months: True
+    #  deactivate: True
+    #test/sw_sdm:
+    #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
+    #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'
+    #  mlp_input_len: 256
+    #  use_months: True
+    #  verbose : True
+    #  most_common_species_map: True
+    #  iterations: 1
+    test/pca_zur:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      reduction: pca
+      scope: zur
+      use_months: ${model.test_cases.test/dsts.use_months}
+    test/pca_swi:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+        - 9
+      reduction: pca
+      scope: swi_tc
+      use_months: ${model.test_cases.test/dsts.use_months}
+    test/pca_euro:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      reduction: pca
+      scope: euro
+      use_months: ${model.test_cases.test/dsts.use_months}
+    test/pca:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+        - 9
+      reduction: pca
+      scope: world
+      use_months: ${model.test_cases.test/dsts.use_months}
+    test/zur_grad:
+      _target_: src.utils.test_cases.zurich_gradient_mean.ZGM
+      months:
+        - 3
+        - 9
+      use_months: ${model.test_cases.test/dsts.use_months}
+    #test/sw_sdm:
+    #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
+    #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'
+    #  mlp_input_len: 256
+    #  use_months: True
+    #  verbose : True
+    #  most_common_species_map: True

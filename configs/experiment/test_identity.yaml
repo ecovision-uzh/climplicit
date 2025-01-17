@@ -1,0 +1,89 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: chelsaCLIP
+  - override /model: identity_test
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: wandb
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["chelsaCLIP"]
+
+seed: 42
+
+train: False
+test: True
+
+# checkpoint_path: 
+
+data:
+  batch_size: 4096
+  climatology_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/1981-2010_numpy/
+  input_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/input/
+
+model:
+  special_mode: SGPlus
+  test_cases:
+    test/dsts:
+      _target_: src.utils.test_cases.dstasks.DSTs
+      mlp_input_len: 384 #4
+      use_months: False
+    #test/sw_sdm:
+    #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
+    #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'
+    #  mlp_input_len: 11
+    #  use_months: True
+    #  pass_month_to_forward: True
+    #  verbose : True
+    #  most_common_species_map: True
+    test/pca_zur:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: zur
+      use_months: ${model.test_cases.test/dsts.use_months}
+    test/pca_swi:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+        - 9
+      reduction: pca
+      scope: swi_tc
+      use_months: ${model.test_cases.test/dsts.use_months}
+    test/pca_euro:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: euro
+      use_months: ${model.test_cases.test/dsts.use_months}
+    test/pca:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+        - 9
+      reduction: pca
+      scope: world
+      use_months: ${model.test_cases.test/dsts.use_months}
+    test/zur_grad:
+      _target_: src.utils.test_cases.zurich_gradient_mean.ZGM
+      months:
+        - 3
+        - 9
+      use_months: ${model.test_cases.test/dsts.use_months}
+
+logger:
+  tags: ${tags}
+  group: "chelsaCLIP"
+  wandb:
+    name: "Identity"
+    project: "chelsaCLIP tests"

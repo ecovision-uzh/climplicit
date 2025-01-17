@@ -1,0 +1,118 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: chelsaCLIP
+  - override /model: learn_chelsa_directly
+  - override /callbacks: default
+  - override /trainer: gpu
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["learn CHELSA directly"]
+
+seed: 42
+
+trainer:
+  min_epochs: 1
+  max_epochs: 100
+  gradient_clip_val: 0.5
+
+model:
+  optimizer:
+    _target_: torch.optim.Adam
+    _partial_: true
+    lr: 0.0005
+    weight_decay: 0.0
+  compile: false
+  location_encoder:
+    _target_: src.models.components.location_encoder.SirenNet
+    dim_in: 386
+    dim_hidden: 1024
+    
+    dim_out: 11
+    num_layers: 4
+    dropout: false
+  pos_embedding:
+    _target_: src.utils.positional_encoding.spheregrid.SphereGridSpatialRelationEncoder
+    coord_dim: 2
+    frequency_num: 64
+    max_radius: 360
+    min_radius: 0.0003
+    freq_init: "geometric"
+    device: "cuda"
+  loss_fn:
+    _target_: torch.nn.MSELoss #L1Loss
+  test_cases:
+    test/pca_zur:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: zur
+    test/pca_swi:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: swi_tc
+    test/pca_euro:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: euro
+    test/pca:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: world
+    #test/statistics:
+    #  _target_: src.utils.test_cases.output_statistics.OutputStatistics
+    #  month: 3
+    #  use_training_coordinates: false
+
+  scheduler:
+    _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+    _partial_: true
+    mode: min
+    factor: 0.2
+    patience: 5
+  
+
+data:
+  batch_size: 8196
+  climatology_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/1981-2010_numpy/
+  input_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/input/
+  skip_samples: 1
+  use_all_for_training: true
+  #${paths.input_dir}
+
+callbacks:
+  early_stopping:
+    monitor: "val/loss"
+    patience: 16
+    mode: "min"
+
+  model_checkpoint:
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "epoch_{epoch:03d}"
+    monitor: "val/loss"
+    mode: "min"
+    save_last: True
+    auto_insert_metric_name: False
+
+logger:
+  tags: ${tags}
+  group: "learn CHELSA directly"
+  wandb:
+    name: "learn CHELSA directly - Switzerland"
+    project: "learn CHELSA directly - Switzerland"
