@@ -1,0 +1,252 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: chelsaCLIP
+  - override /model: chelsaCLIP
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: wandb
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["chelsaCLIP"]
+
+seed: 42
+
+#ckpt_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_031-v5.ckpt
+
+trainer:
+  min_epochs: 1
+  max_epochs: 20
+  gradient_clip_val: 0.5
+
+logger:
+  tags: ${tags}
+  group: "chelsaCLIP"
+  wandb:
+    #name: "${data.provide_chelsa_similarity_matrix}sim ${data.whiten_with_pca}wwp ${data.sampler}"
+    #name: "${model.location_encoder.residual_connections}RC ${data.return_size}rs "
+    name: "cclip ${model.location_encoder.num_layers}L PROPER NORM"
+    #name: "ResFFN ${model.location_encoder.activation} ${model.location_encoder.num_layers}L"
+    #name: "ablation ${data.batch_size}BS ${model.location_encoder.dim_hidden}DH ${model.location_encoder.dim_out}OUT"
+    #name: "ablation no h-siren"
+    project: "chelsaCLIP"
+
+data:
+  batch_size: 8192
+  climatology_dir: /shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010_numpy/
+  #climatology_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/1981-2010_numpy/
+  input_dir: /shares/wegner.ics.uzh/CHELSA/input/
+  #input_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/input/
+  #input_dir: /shares/wegner.ics.uzh/CHELSA/Gridsubset/10/
+  skip_samples: 1
+  use_all_for_training: true
+  provide_chelsa_similarity_matrix: false #0.9
+  local_multi_sampling: false
+  return_size: 1
+  sampler: srw_samp_world #rw_samp
+  whiten_with_pca: False
+  months: "all" # "all", "seasons", "march"
+
+model:
+  regress_loc: False
+  regress_PE: False
+  regress_chelsa: 1
+  chelsa_loss_only: True
+
+  optimizer:
+    _target_: torch.optim.AdamW
+    _partial_: true
+    lr: 0.0001
+  #scheduler:
+  #  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  #  _partial_: true
+  #  mode: min
+  #  factor: 0.2
+  #  patience: 2
+  compile: false
+  location_encoder:
+    _target_: src.models.components.loc_encoder.SirenNet
+    dim_in: 4 #384, 1602, 4
+    dim_hidden: 512
+    dim_out: 256 # 256, 11
+    num_layers: 16
+    dropout: false
+    h_siren: true # true, false
+    residual_connections: true
+  #location_encoder:
+  #  _target_: src.models.components.loc_encoder.FFN
+  #  dim_in: 4 #384, 1602, 4
+  #  dim_hidden: 512
+  #  dim_out: 256 # 256, 11
+  #  num_layers: 16
+  #  activation: "GELU"  # GELU ReLU
+  #  residual_connections: True
+  loss_fn:
+    _target_: src.models.contrastive_loss.SoftmaxClipLoss
+    logit_scale_init: 2.659260036932778
+  #loss_fn:
+  #  _target_: src.models.contrastive_loss.SigmoidClipLoss
+  #  t_prime_init: 2.3026
+  #  b_init: -10.0
+  #pos_embedding:
+  #  _target_: src.utils.positional_encoding.spherical_harmonics.SphericalHarmonics
+  #  legendre_polys: 40
+  #pos_embedding:
+  #  _target_: src.utils.positional_encoding.spheregrid.SphereGridSpatialRelationEncoder
+  #  coord_dim: 2
+  #  frequency_num: 64
+  #  max_radius: 360
+  #  min_radius: 0.0003
+  #  freq_init: "geometric"
+  #  device: "cuda"
+  pos_embedding:
+    _target_: src.utils.positional_encoding.direct.Direct
+    lon_min: -180
+    lon_max:  180
+    lat_min: -90
+    lat_max:  90
+  chelsa_encoder:
+    _target_: src.models.components.residual_net.Residual_Net
+    input_len: 11 # 11, 44, 132
+    hidden_dim: 64
+    layers: 2
+    batchnorm: True
+    out_dim: ${model.location_encoder.dim_out}
+  test_cases:
+    test/dsts:
+      _target_: src.utils.test_cases.dstasks.DSTs
+      mlp_input_len: ${model.location_encoder.dim_out}
+      use_months: True  #True, False
+    test/pca_zur:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: zur
+    test/pca_swi:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: swi_tc
+    test/zur_grad:
+      _target_: src.utils.test_cases.zurich_gradient_mean.ZGM
+      months:
+        - 3
+        - 9
+    test/pca_euro:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+        - 9
+      reduction: pca
+      scope: euro
+    test/pca:
+      _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+      months:
+        - 3
+      #  - 9
+      reduction: pca
+      scope: world
+  val_cases:
+    #test/sw_sdm:
+    #  _target_: src.utils.test_cases.downstreams.chelsa_regression.CHR
+    #  ptc_path: "/shares/wegner.ics.uzh/CHELSA/Switzerland/input/point_to_coord.npy"
+    #  chelsa_path: "/shares/wegner.ics.uzh/CHELSA/Switzerland/1981-2010_numpy/03_monthly_float16.npy"
+    #  iterations: 1
+    #  linear_probing: True
+    #  map_pca: True
+    #  mlp_input_len: ${model.location_encoder.dim_out}
+    #  use_months: False
+    #  verbose : false
+    test/biome_classif:
+      _target_: src.utils.test_cases.downstreams.ecobiome_classification.BEC
+      file_path: '/home/jdolli/chelsaCLIP/src/utils/test_cases/data/ecobiomes_100000.csv'
+      mode: "biomes"
+      iterations: 1
+      linear_probing: True
+      mlp_input_len: ${model.location_encoder.dim_out}
+      use_months: True #True, False
+      biome_tsne: False
+      track_failure_areas: false
+      lake_victoria_map: True
+      verbose : false
+    test/loc_reg:
+      _target_: src.utils.test_cases.downstreams.loc_month_regression.LMR
+      iterations: 1
+      linear_probing: True
+      mlp_input_len: ${model.location_encoder.dim_out}
+      use_months: True #True, False
+      verbose : false
+    test/global_chelsa_reg:
+      _target_: src.utils.test_cases.downstreams.global_chelsa_regression.GCR
+      iterations: 1
+      file_path: '/home/jdolli/chelsaCLIP/src/utils/test_cases/data/global_chelsa_100000.npy'
+      linear_probing: True
+      mlp_input_len: ${model.location_encoder.dim_out}
+      use_months: True #True, False
+      verbose : false
+    #test/sw_sdm:
+    #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
+    #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'
+    #  mlp_input_len: ${model.location_encoder.dim_out}
+    #  use_months: True
+    #  verbose : false
+    #  most_common_species_map: True
+    #test/pca_zur:
+    #  _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+    #  months:
+    #    - 3
+      #  - 9
+    #  reduction: pca
+    #  scope: zur
+    #test/pca_swi:
+    #  _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+    #  months:
+    #    - 3
+    #    - 9
+    #  reduction: pca
+    #  scope: swi_tc
+    #test/pca_euro:
+    #  _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+    #  months:
+    #    - 3
+    #  #  - 9
+    #  reduction: pca
+    #  scope: euro
+    #test/pca:
+    #  _target_: src.utils.test_cases.map_visualization.CreateMapVisual
+    #  months:
+    #    - 3
+    #    - 9
+    #  reduction: pca
+    #  scope: world
+    #test/zur_grad:
+    #  _target_: src.utils.test_cases.zurich_gradient_mean.ZGM
+    #  months:
+    #    - 3
+    #    - 9
+  provide_chelsa_similarity_matrix: ${data.provide_chelsa_similarity_matrix}
+
+callbacks:
+  early_stopping:
+    monitor: "val/loss"
+    patience: 5
+    mode: "min"
+
+  model_checkpoint:
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "epoch_{epoch:03d}"
+    monitor: "val/loss"
+    mode: "min"
+    save_last: True
+    auto_insert_metric_name: False
+
+
