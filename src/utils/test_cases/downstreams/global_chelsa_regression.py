@@ -92,7 +92,7 @@ class GCR():
         gn = torch.Generator().manual_seed(42)
         self.train, self.val, self.test = torch.utils.data.random_split(ds, [0.5, 0.1, 0.4], generator=gn)
         
-        EPOCHS = 500#3000
+        EPOCHS = 5000#3000
         if self.verbose:
             EPOCHS = tqdm(range(EPOCHS))
         else:

@@ -21,7 +21,7 @@ seed: 42
 
 trainer:
   min_epochs: 1
-  max_epochs: 20 # 130
+  max_epochs: 200
   gradient_clip_val: 0.5
 
 logger:
@@ -30,19 +30,16 @@ logger:
   wandb:
     #name: "${data.provide_chelsa_similarity_matrix}sim ${data.whiten_with_pca}wwp ${data.sampler}"
     #name: "${model.location_encoder.residual_connections}RC ${data.return_size}rs "
-    name: "cclip ${model.location_encoder.num_layers}L PROPER NORM"
-    #name: "ResFFN ${model.location_encoder.activation} ${model.location_encoder.num_layers}L"
+    #name: "cclip no H-SIREN ${model.location_encoder.num_layers}L"
+    name: "ERA5"
     #name: "ablation ${data.batch_size}BS ${model.location_encoder.dim_hidden}DH ${model.location_encoder.dim_out}OUT"
     #name: "ablation no h-siren"
     project: "chelsaCLIP"
 
 data:
   batch_size: 8192
-  climatology_dir: /shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010_numpy/
-  #climatology_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/1981-2010_numpy/
-  input_dir: /shares/wegner.ics.uzh/CHELSA/input/
-  #input_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/input/
-  #input_dir: /shares/wegner.ics.uzh/CHELSA/Gridsubset/10/
+  climatology_dir: /shares/wegner.ics.uzh/ERA5/
+  input_dir: /shares/wegner.ics.uzh/ERA5/
   skip_samples: 1
   use_all_for_training: true
   provide_chelsa_similarity_matrix: false #0.9
@@ -59,9 +56,8 @@ model:
   chelsa_loss_only: True
 
   optimizer:
-    _target_: torch.optim.AdamW
-    _partial_: true
     lr: 0.0001
+    weight_decay: 0.0
   #scheduler:
   #  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
   #  _partial_: true
@@ -112,7 +108,7 @@ model:
     lat_max:  90
   chelsa_encoder:
     _target_: src.models.components.residual_net.Residual_Net
-    input_len: 11 # 11, 44, 132
+    input_len: 8 # 11, 44, 132
     hidden_dim: 64
     layers: 2
     batchnorm: True
@@ -166,33 +162,6 @@ model:
     #  mlp_input_len: ${model.location_encoder.dim_out}
     #  use_months: False
     #  verbose : false
-    test/biome_classif:
-      _target_: src.utils.test_cases.downstreams.ecobiome_classification.BEC
-      file_path: '/home/jdolli/chelsaCLIP/src/utils/test_cases/data/ecobiomes_100000.csv'
-      mode: "biomes"
-      iterations: 1
-      linear_probing: True
-      mlp_input_len: ${model.location_encoder.dim_out}
-      use_months: True #True, False
-      biome_tsne: False
-      track_failure_areas: false
-      lake_victoria_map: True
-      verbose : false
-    test/loc_reg:
-      _target_: src.utils.test_cases.downstreams.loc_month_regression.LMR
-      iterations: 1
-      linear_probing: True
-      mlp_input_len: ${model.location_encoder.dim_out}
-      use_months: True #True, False
-      verbose : false
-    test/global_chelsa_reg:
-      _target_: src.utils.test_cases.downstreams.global_chelsa_regression.GCR
-      iterations: 1
-      file_path: '/home/jdolli/chelsaCLIP/src/utils/test_cases/data/global_chelsa_100000.npy'
-      linear_probing: True
-      mlp_input_len: ${model.location_encoder.dim_out}
-      use_months: True #True, False
-      verbose : false
     #test/sw_sdm:
     #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
     #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'

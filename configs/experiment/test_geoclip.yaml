@@ -5,7 +5,7 @@
 
 defaults:
   - override /data: chelsaCLIP
-  - override /model: cclip_components_test
+  - override /model: geoclip_test
   - override /callbacks: default
   - override /trainer: gpu
   - override /logger: wandb
@@ -29,24 +29,12 @@ data:
   months: "march"
 
 model:
-  freeze: False
-  use_chelsa: True
-  use_loc: True
-  months: "seasons"
+  add_multiples: None
   test_cases:
     test/dsts:
       _target_: src.utils.test_cases.dstasks.DSTs
-      mlp_input_len: 256 # 256, 512
+      mlp_input_len: 512 #256, 1024
       use_months: False
-      train_loc_enc: True
-    #test/sw_sdm:
-    #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
-    #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'
-    #  mlp_input_len: 11
-    #  use_months: True
-    #  pass_month_to_forward: True
-    #  verbose : True
-    #  most_common_species_map: True
     test/pca_zur:
       _target_: src.utils.test_cases.map_visualization.CreateMapVisual
       months:
@@ -55,7 +43,6 @@ model:
       reduction: pca
       scope: zur
       use_months: ${model.test_cases.test/dsts.use_months}
-      pass_month_to_forward: True
     test/pca_swi:
       _target_: src.utils.test_cases.map_visualization.CreateMapVisual
       months:
@@ -64,7 +51,6 @@ model:
       reduction: pca
       scope: swi_tc
       use_months: ${model.test_cases.test/dsts.use_months}
-      pass_month_to_forward: True
     test/pca_euro:
       _target_: src.utils.test_cases.map_visualization.CreateMapVisual
       months:
@@ -73,7 +59,6 @@ model:
       reduction: pca
       scope: euro
       use_months: ${model.test_cases.test/dsts.use_months}
-      pass_month_to_forward: True
     test/pca:
       _target_: src.utils.test_cases.map_visualization.CreateMapVisual
       months:
@@ -81,19 +66,17 @@ model:
         - 9
       reduction: pca
       scope: world
-      use_months: ${model.test_cases.test/dsts.use_months}
-      pass_month_to_forward: True
-    test/zur_grad:
-      _target_: src.utils.test_cases.zurich_gradient_mean.ZGM
-      months:
-        - 3
-        - 9
-      use_months: ${model.test_cases.test/dsts.use_months}
-      pass_month_to_forward: True
+#      use_months: ${model.test_cases.test/dsts.use_months}
+#    test/zur_grad:
+#      _target_: src.utils.test_cases.zurich_gradient_mean.ZGM
+#      months:
+#        - 3
+#        - 9
+#      use_months: ${model.test_cases.test/dsts.use_months}
 
 logger:
   tags: ${tags}
   group: "chelsaCLIP"
   wandb:
-    name: "ccomps ${model.months} ${model.use_chelsa}C ${model.use_loc}L"
+    name: "GeoCLIP"
     project: "chelsaCLIP tests"

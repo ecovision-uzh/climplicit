@@ -21,11 +21,11 @@ seed: 42
 
 trainer:
   min_epochs: 1
-  max_epochs: 100
+  max_epochs: 20
   gradient_clip_val: 0.5
 
 data:
-  batch_size: 4096 #8192
+  batch_size: 8192 #8192
   climatology_dir: /shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010_numpy/
   input_dir: /shares/wegner.ics.uzh/CHELSA/input/
   skip_samples: 1
@@ -34,6 +34,7 @@ data:
   local_multi_sampling: false
   sampler: no_samp
   whiten_with_pca: true
+  months: "all"
 
 model:
   optimizer:
@@ -41,28 +42,24 @@ model:
     _partial_: true
     lr: 0.0001
     weight_decay: 0.0
-  scheduler:
-    _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
-    _partial_: true
-    mode: min
-    factor: 0.2
-    patience: 2
   compile: false
   location_encoder:
     _target_: src.models.components.loc_encoder.SirenNet
-    dim_in: 386
-    dim_hidden: 1024
+    dim_in: 4
+    dim_hidden: 512
     dim_out: 11
-    num_layers: 12
+    num_layers: 16
     dropout: false
+    h_siren: true # true, false
+    residual_connections: true
+    final_activation:
+      _target_: torch.nn.Identity
   pos_embedding:
-    _target_: src.utils.positional_encoding.spheregrid.SphereGridSpatialRelationEncoder
-    coord_dim: 2
-    frequency_num: 64
-    max_radius: 360
-    min_radius: 0.0003
-    freq_init: "geometric"
-    device: "cuda"
+    _target_: src.utils.positional_encoding.direct.Direct
+    lon_min: -180
+    lon_max:  180
+    lat_min: -90
+    lat_max:  90
   loss_fn:
     _target_: torch.nn.MSELoss #L1Loss
   test_cases:

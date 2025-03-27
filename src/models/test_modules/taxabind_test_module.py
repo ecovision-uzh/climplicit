@@ -7,15 +7,24 @@ import wandb
 import pickle
 import sys
 
+def create_model():
+    sys.path.append('/home/jdolli/sinr/')
+    from transformers import PretrainedConfig
+    from rshf.taxabind import TaxaBind
+
+    config = PretrainedConfig.from_pretrained("MVRL/taxabind-config")
+    taxabind = TaxaBind(config)
+    location_encoder = taxabind.get_location_encoder().to("cuda")
+
+    return location_encoder
+
+
 class DummyEnc(torch.nn.Module):
     def __init__(self, add_multiples):
         super().__init__()
         self.add_multiples = add_multiples
 
-        sys.path.append('/home/jdolli/satclip/satclip')
-        from load import get_satclip
-
-        self.location_encoder = get_satclip('/home/jdolli/chelsaCLIP/src/utils/test_cases/data/satclip-resnet18-l40.ckpt', device="cuda") #Only loads location encoder by default
+        self.location_encoder = create_model()
         self.location_encoder.eval()
     
     def forward(self, x):
@@ -23,17 +32,20 @@ class DummyEnc(torch.nn.Module):
             emb = self.location_encoder(x)
             return torch.cat([emb]*self.add_multiples, dim=1)
         else:
+            lat = x[:, 1]
+            lon = x[:, 0]
+            x = torch.stack([lat, lon], dim=1).float()
             return self.location_encoder(x)
 
 
-class SatCLIPTestModule(LightningModule):
+class TaxabindTestModule(LightningModule):
     """
     """
 
     def __init__(
         self,
         test_cases = None,
-        add_multiples = False,
+        add_multiples = None,
     ):
 
         super().__init__()
@@ -60,7 +72,7 @@ class SatCLIPTestModule(LightningModule):
                             case(pe_copy, le_copy, wb)
 
 if __name__ == "__main__":
-    loc_enc = DummyEnc(add_multiples=4)
+    loc_enc = DummyEnc(add_multiples=None)
     inp = []
     for i in range(3):
         inp.append(torch.tensor([170.0, -30], dtype=torch.double))

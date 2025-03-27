@@ -1,0 +1,100 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=example
+
+defaults:
+  - override /data: chelsaCLIP
+  - override /model: chelsaCLIP
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: wandb
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+tags: ["chelsaCLIP"]
+
+seed: 42
+
+#ckpt_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_031-v5.ckpt
+
+trainer:
+  min_epochs: 1
+  max_epochs: 100 # 130
+  gradient_clip_val: 0.5
+
+logger:
+  tags: ${tags}
+  group: "chelsaCLIP"
+  wandb:
+    name: "futclim ${data.months}"
+    project: "chelsaCLIP"
+
+data:
+  batch_size: 8192
+  climatology_dir: /shares/wegner.ics.uzh/CHELSA/Future_Climatologies/
+  input_dir: /shares/wegner.ics.uzh/CHELSA/Future_Climatologies/
+  skip_samples: 1
+  use_all_for_training: true
+  provide_chelsa_similarity_matrix: false #0.9
+  local_multi_sampling: false
+  return_size: 1
+  sampler: srw_samp_world #rw_samp
+  whiten_with_pca: False
+  months: "seasons" # "all", "seasons", "march"
+
+model:
+  future_climatologies: True
+  regress_loc: False
+  regress_PE: False
+  regress_chelsa: 1
+  chelsa_loss_only: True
+
+  optimizer:
+    _target_: torch.optim.AdamW
+    _partial_: true
+    lr: 0.0001
+  compile: false
+  location_encoder:
+    _target_: src.models.components.loc_encoder.SirenNet
+    dim_in: 6 #384, 1602, 4
+    dim_hidden: 512
+    dim_out: 256 # 256, 11
+    num_layers: 16
+    dropout: false
+    h_siren: true # true, false
+    residual_connections: true
+  loss_fn:
+    _target_: src.models.contrastive_loss.SoftmaxClipLoss
+    logit_scale_init: 2.659260036932778
+  pos_embedding:
+    _target_: src.utils.positional_encoding.direct.Direct
+    lon_min: -180
+    lon_max:  180
+    lat_min: -90
+    lat_max:  90
+  chelsa_encoder:
+    _target_: src.models.components.residual_net.Residual_Net
+    input_len: 4 # 11, 44, 132
+    hidden_dim: 64
+    layers: 2
+    batchnorm: True
+    out_dim: ${model.location_encoder.dim_out}
+  provide_chelsa_similarity_matrix: ${data.provide_chelsa_similarity_matrix}
+
+callbacks:
+  early_stopping:
+    monitor: "val/loss"
+    patience: 5
+    mode: "min"
+
+  model_checkpoint:
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "epoch_{epoch:03d}"
+    monitor: "val/loss"
+    mode: "min"
+    save_last: True
+    auto_insert_metric_name: False
+
+

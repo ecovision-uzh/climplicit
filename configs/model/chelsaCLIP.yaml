@@ -19,7 +19,7 @@ location_encoder:
   dim_hidden: 2048
   dim_out: 256
   num_layers: 4
-  dropout: False
+  #dropout: False
 
 chelsa_encoder:
   _target_: src.models.components.residual_net.Residual_Net

@@ -92,7 +92,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
 
         self.batch_size_per_device = batch_size
 
-        def collate_fn(batch):
+        """def collate_fn(batch):
             if provide_chelsa_similarity_matrix:
                 if local_multi_sampling:
                     lonlat = torch.cat([x[0] for x in batch], 0)
@@ -126,7 +126,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
                 #chelsa = torch.stack([x[1] for x in batch])
                 return lonlat, months, chelsa
 
-        self.collate_fn = collate_fn
+        self.collate_fn = collate_fn"""
 
     def prepare_data(self) -> None:
         """Download data if needed. Lightning ensures that `self.prepare_data()` is called only
@@ -237,7 +237,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=shuffle,
-            collate_fn=self.collate_fn,
+            #collate_fn=self.collate_fn,
             sampler=sampler
         )
 
@@ -254,7 +254,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=True,
-            collate_fn=self.collate_fn
+            #collate_fn=self.collate_fn
         )
 
     def test_dataloader(self) -> DataLoader[Any]:
@@ -268,7 +268,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=True,
-            collate_fn=self.collate_fn
+            #collate_fn=self.collate_fn
         )
 
     def teardown(self, stage: Optional[str] = None) -> None:

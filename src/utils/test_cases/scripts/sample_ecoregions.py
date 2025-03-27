@@ -1,7 +1,7 @@
 import geopandas as gpd
 import pandas as pd
 # Load the vector data using GeoPandas
-eco = gpd.read_file("/home/jdolli/chelsaCLIP/src/utils/test_cases/data/TerrestrialEcos/data/commondata/data0/wwf_terr_ecos.shp")
+eco = gpd.read_file("/home/jdolli/chelsaCLIP/src/utils/test_cases/data/data/commondata/data0/wwf_terr_ecos.shp")
 
 import torch
 import math

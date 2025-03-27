@@ -236,10 +236,10 @@ class EuropeDataset(torch.utils.data.Dataset):
         E_x = 25300
         S_y = 6200
 
-        self.N = 74.0
-        self.W = -10.83
-        self.S = 32.41
-        self.E = 30.75
+        self.N = 71.1839
+        self.W = -10.4760
+        self.S = 34.5686
+        self.E = 34.5579
 
         self.x_pixel = 330
         self.y_pixel = 440

@@ -25,8 +25,8 @@ from global_chelsa_regression import GCR
 
 
 class DSTs():
-    def __init__(self, mlp_input_len, use_months, pass_month_to_forward=False, 
-    verbose=True, linear_probing=True, iterations=1, deactivate=False, train_loc_enc=False):
+    def __init__(self, mlp_input_len, use_months, pass_month_to_forward=False,
+    verbose=True, linear_probing=True, iterations=10, deactivate=False, train_loc_enc=False):
         self.mlp_input_len = mlp_input_len
         self.verbose = verbose
         self.linear_probing = linear_probing
@@ -131,7 +131,7 @@ class DSTs():
                 mlp_input_len=self.mlp_input_len,
                 use_months=self.use_months, mode = "ecoregions", pass_month_to_forward=self.pass_month_to_forward,
                 verbose=self.verbose, iterations=self.iterations, linear_probing=self.linear_probing, train_loc_enc=self.train_loc_enc)
-        ec(pos_embedding, location_encoder, wb)
+        #ec(pos_embedding, location_encoder, wb)
 
         if self.train_loc_enc:
             location_encoder.reset_model()
@@ -142,7 +142,7 @@ class DSTs():
             use_months=self.use_months, pass_month_to_forward=self.pass_month_to_forward,
             verbose=self.verbose, iterations=self.iterations, linear_probing=self.linear_probing,
             most_common_species_map=True, train_loc_enc=self.train_loc_enc)
-        sdm(pos_embedding, location_encoder, wb)
+        #sdm(pos_embedding, location_encoder, wb)
         if self.train_loc_enc:
             location_encoder.reset_model()
         sdm = EU_SDM('/shares/wegner.ics.uzh/glc23_data/Pot_10_to_1000.csv',

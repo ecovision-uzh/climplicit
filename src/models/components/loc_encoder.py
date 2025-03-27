@@ -9,10 +9,11 @@ from datetime import datetime
 """Where did I copy this one from?"""
 class SirenNet(nn.Module):
     def __init__(self, dim_in, dim_hidden, dim_out, num_layers, w0 = 1., w0_initial = 30., use_bias = True, final_activation = None, dropout = False,
-    residual_connections=False, h_siren=False):
+    residual_connections=False, h_siren=False, return_hidden_embs=None):
         super().__init__()
         self.num_layers = num_layers
         self.dim_hidden = dim_hidden
+        self.return_hidden_embs = return_hidden_embs
 
         self.layers = nn.ModuleList([])
         for ind in range(num_layers):
@@ -36,13 +37,54 @@ class SirenNet(nn.Module):
 
     def forward(self, x, mods = None):
 
+        res = []
         gaussian = None
         # Passing the gaussian (vector after dot product and before sin) between layers as residual connection
-        for layer in self.layers:
+        for i in range(len(self.layers)):
+            layer = self.layers[i]
             x, gaussian = layer(x, gaussian)
+            if self.return_hidden_embs is not None:
+                if i in self.return_hidden_embs:
+                    res.append(x)
 
-        res, _ = self.last_layer(x, gaussian)
-        return res
+        x, _ = self.last_layer(x, gaussian)
+
+        if len(res) > 0:
+            res.append(x)
+            x = torch.cat(res, dim=1)
+        return x
+
+class ResBlock(nn.Module):
+    def __init__(self, dim_in, dim_out, act):
+        super().__init__()
+        self.linear = nn.Linear(dim_in, dim_out)
+        self.act = act
+    def forward(self, x):
+        return x + self.act(self.linear(x))
+
+class FFN(nn.Module):
+    def __init__(self, dim_in, dim_hidden, dim_out, num_layers, activation, residual_connections):
+        super().__init__()
+        if activation == "ReLU":
+            act = nn.ReLU()
+        elif activation == "GELU":
+            act = nn.GELU()
+        
+        if residual_connections:
+            layers = [nn.Linear(dim_in, dim_hidden), act]
+            for i in range(num_layers-1):
+                layers.append(ResBlock(dim_hidden, dim_hidden, act))
+            layers.append(nn.Linear(dim_hidden, dim_out))
+        else:
+            layers = [nn.Linear(dim_in, dim_hidden), act]
+            for i in range(num_layers-1):
+                layers.append(nn.Linear(dim_hidden, dim_hidden))
+                layers.append(act)
+            layers.append(nn.Linear(dim_hidden, dim_out))
+
+        self.net = nn.Sequential(*layers)
+    def forward(self, x):
+        return self.net(x)
     
 class Sine(nn.Module):
     def __init__(self, w0 = 1.):
@@ -84,7 +126,7 @@ class Siren(nn.Module):
         out =  F.linear(x, self.weight, self.bias)
         if self.dropout:
             out = F.dropout(out, training=self.training)
-        if self.residual_connections and prev_gaussian is not None:
+        if self.residual_connections and prev_gaussian is not None and out.shape == prev_gaussian.shape:
             out = (out + prev_gaussian) / 2
         gaussian = out
         if self.h_siren and self.is_first:

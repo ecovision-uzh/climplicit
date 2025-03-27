@@ -24,8 +24,9 @@ test: True
 
 data:
   batch_size: 4096
-  climatology_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/1981-2010_numpy/
-  input_dir: /shares/wegner.ics.uzh/CHELSA/Switzerland/input/
+  climatology_dir: /shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010_numpy/
+  input_dir: /shares/wegner.ics.uzh/CHELSA/input/
+  months: "march"
 
 model:
   add_multiples: 1
@@ -77,5 +78,5 @@ logger:
   tags: ${tags}
   group: "chelsaCLIP"
   wandb:
-    name: "satclip"
+    name: "Satclip"
     project: "chelsaCLIP tests"

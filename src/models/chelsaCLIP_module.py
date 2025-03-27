@@ -49,9 +49,11 @@ class ChelsaCLIPModule(LightningModule):
         val_cases = None,
         test_cases = None,
         provide_chelsa_similarity_matrix = False,
+        future_climatologies = False,
         regress_loc = False,
         regress_PE = False,
         regress_chelsa = False,
+        chelsa_loss_only = False,
     ):
 
         super().__init__()
@@ -72,6 +74,7 @@ class ChelsaCLIPModule(LightningModule):
         self.regress_loc = regress_loc
         self.regress_PE = regress_PE
         self.regress_chelsa = regress_chelsa
+        self.chelsa_loss_only = chelsa_loss_only
 
         if self.regress_loc:
             self.loc_regressor = torch.nn.Linear(self.chelsa_encoder.final_transform.out_features, 2)
@@ -111,7 +114,11 @@ class ChelsaCLIPModule(LightningModule):
     def model_step(self, batch, verbose=False, plot_learnability=False):
         if self.hparams.provide_chelsa_similarity_matrix:
             #lonlat, month, chelsa, similarity = batch
+            raise NotImplementedError()
             pass
+        elif self.hparams.future_climatologies:
+            lonlat, month, tf, ssp, chelsa = batch
+            similarity = None
         else:
             lonlat, month, chelsa = batch
             #lonlat, chelsa = batch
@@ -126,12 +133,25 @@ class ChelsaCLIPModule(LightningModule):
         if verbose:
             print("loc",loc.max(), loc.min(), loc.mean())
 
-        # Append a sin/cos transform of the month to the vector
-        loc_month = torch.concat([loc, torch.sin(month/12*torch.pi*2).unsqueeze(dim=-1),torch.cos(month/12*torch.pi*2).unsqueeze(dim=-1)], dim=-1)
+        if self.hparams.future_climatologies:
+            # Beside month also append tf scaled to [-1;-0.33;0.33;1] and ssp scaled to [-1;0;1]
+            loc_month = torch.concat([loc,
+            torch.sin(month/12*torch.pi*2).unsqueeze(dim=-1),
+            torch.cos(month/12*torch.pi*2).unsqueeze(dim=-1),
+            ((tf-1.5)/1.5).unsqueeze(dim=-1),
+            (ssp-1).unsqueeze(dim=-1)], dim=-1)
+        else:
+            # Append a sin/cos transform of the month to the vector
+            loc_month = torch.concat([loc, torch.sin(month/12*torch.pi*2).unsqueeze(dim=-1),torch.cos(month/12*torch.pi*2).unsqueeze(dim=-1)], dim=-1)
         if verbose:
             print("loc_month",loc_month.max(), loc_month.min(), loc_month.mean())
         
         loc_month_emb = self.location_encoder(loc_month) # SirenNet
+        if self.chelsa_loss_only:
+            rec = self.chelsa_regressor(loc_month_emb)
+            regress_loss = self.rec_loss(rec, chelsa.float())
+            #self.log("train/loss_chelsa_reg", regress_loss.detach().cpu())
+            return self.regress_chelsa * regress_loss
         #loc_emb = self.location_encoder(loc)
         chelsa_emb = self.chelsa_encoder(chelsa) # FF-ResNet or CNN or PCA or more
         if verbose:
@@ -159,7 +179,6 @@ class ChelsaCLIPModule(LightningModule):
             rec = self.chelsa_regressor(loc_month_emb)
             regress_loss = self.rec_loss(rec, chelsa.float())
             self.log("train/loss_chelsa_reg", regress_loss.detach().cpu())
-            loss += self.regress_chelsa * regress_loss
 
         if self.regress_PE:
             rec = self.PE_regressor(loc_month_emb)
@@ -235,7 +254,8 @@ class ChelsaCLIPModule(LightningModule):
 
         #if batch_idx == 0 :
         #    print("-----------Val verbose -------------")
-        loss = self.model_step(batch, plot_learnability=(True if batch_idx == 0 else False))
+        #loss = self.model_step(batch, plot_learnability=(True if batch_idx == 0 else False))
+        loss = self.model_step(batch)
         #if batch_idx == 0 :
         #    print("-----------End val verbose -------------")
 

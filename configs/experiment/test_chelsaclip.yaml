@@ -24,64 +24,70 @@ logger:
   tags: ${tags}
   group: "chelsaCLIP"
   wandb:
-    name: "cclip tiny monthly"
+    #name: "64L 8,16,32,48R"
+    name: "Climplicit"
     project: "chelsaCLIP tests"
 
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_046-v3.ckpt #0.99sim wwp
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_099-v46.ckpt  #wwp
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_051-v1.ckpt #0.95sim
-
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_015-v7.ckpt #tiny fixed siglip 0.01Loc
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_043-v3.ckpt #naive base
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_025-v11.ckpt #naive tiny
-checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_098-v5.ckpt #naive tiny old
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_099-v45.ckpt  #naive base old
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_093.ckpt  #naive large old
-#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_062-v2.ckpt #naive SH old
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v64.ckpt  #8 layers RC
+checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v66.ckpt #16 layers RC
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v67.ckpt  #32 layers RC
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v71.ckpt  #48 layers RC
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v70.ckpt  #64 layers RC
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_018-v14.ckpt  #64 layers NO H-SIREN
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_018-v13.ckpt #ablation no h-siren
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_013-v11.ckpt #ablation march-only
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v48.ckpt #ablation siren
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v50.ckpt #ablation rec-CHELSA
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v33.ckpt #ablation clip
+#checkpoint_path: /shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_019-v51.ckpt  #ablation all-months
 
 data:
-  batch_size: 4096
+  batch_size: 8192
   climatology_dir: /shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010_numpy/
   input_dir: /shares/wegner.ics.uzh/CHELSA/input/
   months: "march"
 
 model:
-  regress_loc: False #False, 0.01 
+  regress_loc: False #False, 1, True
+  regress_chelsa: 1
+  chelsa_loss_only: True
   location_encoder:
     _target_: src.models.components.loc_encoder.SirenNet
-    dim_in: 386 #386,384, 1602
-    dim_hidden: 512 #512, 1024 
-    dim_out: 256
-    num_layers: 2 # 2, 4, 12
+    dim_in: 4 #384, 1600, 4
+    dim_hidden: 512
+    dim_out:  256 # 256, 11, 2304
+    num_layers: 16
     dropout: false
+    h_siren: true # true, false
+    residual_connections: true
+    #return_hidden_embs: [8,16,32,48]
   pos_embedding:
-    _target_: src.utils.positional_encoding.spheregrid.SphereGridSpatialRelationEncoder
-    coord_dim: 2
-    frequency_num: 64
-    max_radius: 360
-    min_radius: 0.0003
-    freq_init: "geometric"
-    device: "cuda"
+    _target_: src.utils.positional_encoding.direct.Direct
+    lon_min: -180
+    lon_max:  180
+    lat_min: -90
+    lat_max:  90
   loss_fn:
-    _target_: src.models.contrastive_loss.SigmoidClipLoss
-    t_prime_init: 3.0 #2.3026
-    b_init: -20.0 #-10.0
+    _target_: src.models.contrastive_loss.SoftmaxClipLoss
+    logit_scale_init: 2.659260036932778
   chelsa_encoder:
     _target_: src.models.components.residual_net.Residual_Net
-    input_len: 11 #44, 11
+    input_len: 11 #44, 11, 132
     hidden_dim: 64
     layers: 2
     batchnorm: True
-    out_dim: 256
+    out_dim: ${model.location_encoder.dim_out}
   #pos_embedding:
   #  _target_: src.utils.positional_encoding.spherical_harmonics.SphericalHarmonics
   #  legendre_polys: 40
   test_cases:
     test/dsts:
       _target_: src.utils.test_cases.dstasks.DSTs
-      mlp_input_len: 256
+      #mlp_input_len: ${model.location_encoder.dim_out}
+      mlp_input_len: 256 # 256, 2304
       use_months: True #False, True
-    #  deactivate: True
+      deactivate: False
+      #iterations: 1
     #test/sw_sdm:
     #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
     #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'
@@ -116,7 +122,7 @@ model:
       _target_: src.utils.test_cases.map_visualization.CreateMapVisual
       months:
         - 3
-        - 9
+      #  - 9
       reduction: pca
       scope: world
       use_months: ${model.test_cases.test/dsts.use_months}

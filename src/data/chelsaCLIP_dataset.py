@@ -5,7 +5,7 @@ import pickle as pk
 import numpy as np
 import os
 import json
-import rioxarray
+#import rioxarray
 import random
 import torch
 import random
@@ -60,6 +60,8 @@ class ChelsaCLIPDataset(Dataset):
             for month in self.monthly_arrays.keys():
                 self.monthly_arrays[month][:, ::skip_samples]
 
+        self.future_climatologies = "Future_Climatologies" in point_to_coord_file
+
     def __len__(self):
         return len(self.point_to_coord)
 
@@ -91,12 +93,29 @@ class ChelsaCLIPDataset(Dataset):
         else:
             #chelsa = self.monthly_arrays[month][:, pixel_y, pixel_x]
             chelsa = self.monthly_arrays[month][:, idx]
+            #chelsa = []
+            #for mar in self.monthly_arrays.values():
+            #    chelsa.append(torch.tensor(mar[:, idx]))
+            #chelsa = torch.cat(chelsa).numpy()
             #print(pixel_y, pixel_x, self.monthly_arrays[month].shape, self.locs.shape)
 
         if self.whiten_pca:
             chelsa = self.whiten_pca.transform(chelsa.reshape((1,11))).reshape((11)).astype("float16")
 
         return lonlat, int(month), chelsa
+
+    def get_idx_future_clims(self, idx, month, tf, ssp):
+        lonlat = self.point_to_coord[idx]
+
+        # time_frames = ["current", "2011_2040", "2041_2070", "2071_2100"] -> [0, 1, 2, 3]
+        # ssps = ["ssp126", "ssp370", "ssp585"] -> [0, 1, 2]
+        chelsa = self.monthly_arrays[month][tf, ssp, :, idx]
+
+        if self.whiten_pca:
+            raise NotImplementedError("Haven't calculated whitening for future climatologies yet")
+            #chelsa = self.whiten_pca.transform(chelsa.reshape((1,4))).reshape((4)).astype("float16")
+
+        return lonlat, int(month), tf, ssp, chelsa
 
     """def get_idx(self, idx):
         pixel_y, pixel_x = self.locs[idx]
@@ -165,6 +184,8 @@ class ChelsaCLIPDataset(Dataset):
                 months = torch.stack(months)
                 chelsas = torch.stack(chelsas)
             return lonlats, months, chelsas
+        elif self.future_climatologies:
+            return self.get_idx_future_clims(idx, month = random.choice(self.months), tf = random.randint(0,3), ssp = random.randint(0,2))
         else:
             return self.get_idx(idx, month = random.choice(self.months))
             #return self.get_idx(idx)

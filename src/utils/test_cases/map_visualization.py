@@ -114,7 +114,7 @@ class CreateMapVisual():
             if self.scope == "world" and wb:
                 try:
                     pca_2 = PCA(n_components=256)
-                    pca_2.fit(all_encs)
+                    pca_2.fit(all_encs[:,:256])
                     evrs = pca_2.explained_variance_ratio_
                     evrs = [sum(evrs[:i]) for i in range(len(evrs))]
                     log_dict[section + "world_pca_first_3_dim_explained_variance"] = sum(pca.explained_variance_ratio_)

@@ -430,6 +430,11 @@ class BEC():
                 print(log_dict)
         else:
             wb.log({"ECOREGIONS C/top1_mean" : top1s.mean(), "ECOREGIONS C/top1_std" : top1s.std()})
+        
+        font = {'weight' : 'bold',
+                'size'   : 16}
+        import matplotlib
+        matplotlib.rc('font', **font)
 
         if self.mode == "biomes" and self.plot_confusion_matrix:
             cf = ignite.metrics.confusion_matrix.ConfusionMatrix(100)
@@ -872,7 +877,7 @@ import pandas as pd
 class EcoregionsLocEnc(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.eco = gpd.read_file("/home/jdolli/chelsaCLIP/src/utils/test_cases/data/TerrestrialEcos/data/commondata/data0/wwf_terr_ecos.shp")
+        self.eco = gpd.read_file("/home/jdolli/chelsaCLIP/src/utils/test_cases/data/data/commondata/data0/wwf_terr_ecos.shp")
     def forward(self, x):
 
         pts = pd.DataFrame(x.cpu().numpy())
@@ -902,10 +907,10 @@ class EcoregionsLocEnc(torch.nn.Module):
 if __name__ == "__main__":
     pos_embedding = FakePosEmb()
     location_encoder = EcoregionsLocEnc()
-    location_encoder = FakeLocEnc()
+    #location_encoder = FakeLocEnc()
     
     sw_sdm = BEC('/home/jdolli/chelsaCLIP/src/utils/test_cases/data/ecobiomes_100000.csv',
     mode="biomes",
-    mlp_input_len=2, use_months=False, verbose=True, plot_confusion_matrix=True, track_failure_areas=False, lake_victoria_map=False, biome_tsne=False, iterations=1, epochs=5000, linear_probing=True)
+    mlp_input_len=100, use_months=False, verbose=True, plot_confusion_matrix=False, track_failure_areas=False, lake_victoria_map=True, biome_tsne=False, iterations=1, epochs=5000, linear_probing=True)
     sw_sdm(pos_embedding, location_encoder, None)
     

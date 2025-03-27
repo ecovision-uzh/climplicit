@@ -7,33 +7,44 @@ import wandb
 import pickle
 import sys
 
+def create_model():
+    sys.path.append('/home/jdolli/sinr/')
+    from sinr_models import get_model
+    import sinr_utils
+    file = "/home/jdolli/sinr/pretrained_models/model_an_full_input_enc_sin_cos_hard_cap_num_per_class_1000.pt"
+    train_params = torch.load(file, map_location='cuda')
+    model = get_model(train_params['params'])
+    model.load_state_dict(train_params['state_dict'], strict=True)
+    enc = sinr_utils.CoordEncoder(train_params['params']['input_enc'])
+
+    return enc, model.to("cuda")
+
+
 class DummyEnc(torch.nn.Module):
     def __init__(self, add_multiples):
         super().__init__()
         self.add_multiples = add_multiples
 
-        sys.path.append('/home/jdolli/satclip/satclip')
-        from load import get_satclip
-
-        self.location_encoder = get_satclip('/home/jdolli/chelsaCLIP/src/utils/test_cases/data/satclip-resnet18-l40.ckpt', device="cuda") #Only loads location encoder by default
-        self.location_encoder.eval()
+        self.location_encoder, self.model = create_model()
+        self.model.eval()
     
     def forward(self, x):
         if isinstance(self.add_multiples, int):
             emb = self.location_encoder(x)
             return torch.cat([emb]*self.add_multiples, dim=1)
         else:
-            return self.location_encoder(x)
+            x = self.location_encoder.encode(x.float()).to("cuda")
+            return self.model(x, return_feats=True)
 
 
-class SatCLIPTestModule(LightningModule):
+class SINRTestModule(LightningModule):
     """
     """
 
     def __init__(
         self,
         test_cases = None,
-        add_multiples = False,
+        add_multiples = None,
     ):
 
         super().__init__()
@@ -60,7 +71,7 @@ class SatCLIPTestModule(LightningModule):
                             case(pe_copy, le_copy, wb)
 
 if __name__ == "__main__":
-    loc_enc = DummyEnc(add_multiples=4)
+    loc_enc = DummyEnc(add_multiples=None)
     inp = []
     for i in range(3):
         inp.append(torch.tensor([170.0, -30], dtype=torch.double))

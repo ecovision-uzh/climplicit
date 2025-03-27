@@ -14,6 +14,7 @@ import numpy as np
 import sys
 sys.path.append('/home/jdolli/chelsaCLIP/src/utils')
 from positional_encoding.spheregrid import SphereGridSpatialRelationEncoder
+from positional_encoding.direct import Direct
 sys.path.append('/home/jdolli/chelsaCLIP/src/models/components')
 from loc_encoder import SirenNet
 from residual_net import Residual_Net
@@ -46,15 +47,17 @@ class CHELSA_Loc_Enc(torch.nn.Module):
             self.ras = rasterio.open('/shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010/cmi/CHELSA_cmi_01_1981-2010_V.2.1.tif')
 
     def reset_model(self):
-        self.pos_emb = SphereGridSpatialRelationEncoder(
+        """self.pos_emb = SphereGridSpatialRelationEncoder(
                 coord_dim= 2,
                 frequency_num= 64,
                 max_radius= 360,
                 min_radius= 0.0003,
                 freq_init= "geometric",
-                device= "cuda")
-        self.loc_enc =  SirenNet(dim_in=384, dim_hidden=512, dim_out=256, num_layers=2, dropout=False)
-        self.chelsa_enc = Residual_Net(input_len=11*len(self.months), hidden_dim=64, layers=2, batchnorm=True, out_dim=256)
+                device= "cuda")"""
+
+        self.pos_emb = Direct(lon_min=-180,lon_max=180,lat_min=-90,lat_max=90)
+        self.loc_enc =  SirenNet(dim_in=2, dim_hidden=512, dim_out=256, num_layers=16, dropout=False, h_siren=True, residual_connections=True)
+        self.chelsa_enc = Residual_Net(input_len=11*len(self.months), hidden_dim=64, layers=4, batchnorm=False, out_dim=256)
 
         if self.freeze:
             for param in self.loc_enc.parameters():

@@ -104,10 +104,10 @@ class EU_SDM():
         model = SDM(self.mlp_input_len, pos_embedding, location_encoder, self.use_months, self.pass_month_to_forward, linear_probing=self.linear_probing).to("cuda")
         
         def sinr_loss(out, labels, model):
-            N = 74.00
-            W = -10.83
-            S = 30.75
-            E = 32.41
+            N = 71.1839
+            W = -10.4760
+            S = 34.5686
+            E = 34.5579
             lon = torch.rand(len(out)) * (E-W) + W
             lat = torch.rand(len(out)) * (N-S) + S
             random_lonlat = torch.stack([lon, lat], dim=1).to("cuda")
@@ -140,7 +140,7 @@ class EU_SDM():
         best_val_loss = 100
         es_counter = 0
         if not self.train_loc_enc:
-            train = torch.utils.data.DataLoader(dataset=self.train, batch_size=BATCH_SIZE, num_workers=1, shuffle=True)
+            train = torch.utils.data.DataLoader(dataset=self.train, batch_size=BATCH_SIZE, num_workers=16, shuffle=True)
             train_x = []
             train_y = []
             for lonlat, month, y in train:
@@ -297,13 +297,13 @@ class EU_SDM():
             dl = torch.utils.data.DataLoader(
                     dataset=ds,
                     batch_size=8196,
-                    num_workers=16,
+                    num_workers=15,
                     shuffle=False,
                 )
 
             po_ds = SW_PO_DS(self.PO_path)
 
-            for m in ["03", "06", "09"]:
+            for m in ["03", "06", "09", "12"]:
                 encodings = []
                 for lonlat in dl:
                     lonlat = lonlat.to("cuda")
@@ -320,16 +320,21 @@ class EU_SDM():
                     imgs = np.zeros((ds.y_pixel, ds.x_pixel, encodings.shape[-1]))
                     imgs[ds.land_mask != 0] = encodings
                 
+                font = {'weight' : 'bold',
+                'size'   : 16}
+                import matplotlib
+                matplotlib.rc('font', **font)
+
                 sid = 265 # 265 my sat-sinr species
                 img = imgs[:,:, sid]
                 fig, ax = plt.subplots(figsize=(12, 12))
-                ax.set_xlim([-10.83, 32.41])
-                ax.set_ylim([30.75, 74.00])
+                ax.set_xlim([ds.W, ds.E])
+                ax.set_ylim([ds.S, ds.N])
 
-                im = ax.imshow(img, extent=(-10.83, 32.41, 30.75, 74.00), vmin=0, vmax=1, cmap=plt.cm.plasma)
+                im = ax.imshow(img, extent=(ds.W, ds.E, ds.S, ds.N), vmin=0, vmax=1, cmap=plt.cm.plasma, aspect="auto")
                 sp_cond = po_ds.data["speciesId"] == sid
-                m_cond = po_ds.data["dayOfYear"] // 31 == int(m)
-                ax.scatter(po_ds.data[sp_cond & m_cond]["lon"], po_ds.data[sp_cond & m_cond]["lat"], c="green", alpha=1, s=3)
+                m_cond = po_ds.data["dayOfYear"] // 31 == (int(m) - 1)
+                ax.scatter(po_ds.data[sp_cond & m_cond]["lon"], po_ds.data[sp_cond & m_cond]["lat"], c="green", alpha=1, s=5)
 
                 ax.set_xlabel("Longitude")
                 ax.set_ylabel("Latitude")
