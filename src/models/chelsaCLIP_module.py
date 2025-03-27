@@ -6,6 +6,7 @@ import wandb
 
 import pickle
 
+
 class ChelsaCLIPModule(LightningModule):
     """
     A `LightningModule` implements 8 key methods:
@@ -45,27 +46,29 @@ class ChelsaCLIPModule(LightningModule):
         optimizer,
         compile,
         loss_fn,
-        scheduler = None,
-        val_cases = None,
-        test_cases = None,
-        provide_chelsa_similarity_matrix = False,
-        future_climatologies = False,
-        regress_loc = False,
-        regress_PE = False,
-        regress_chelsa = False,
-        chelsa_loss_only = False,
+        scheduler=None,
+        val_cases=None,
+        test_cases=None,
+        provide_chelsa_similarity_matrix=False,
+        future_climatologies=False,
+        regress_loc=False,
+        regress_PE=False,
+        regress_chelsa=False,
+        chelsa_loss_only=False,
     ):
 
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(logger=False, ignore=["location_encoder", "chelsa_encoder", "pos_embedding"])
+        self.save_hyperparameters(
+            logger=False, ignore=["location_encoder", "chelsa_encoder", "pos_embedding"]
+        )
 
-        self.location_encoder = location_encoder # SirenNet
-        self.chelsa_encoder = chelsa_encoder # FF-ResNet
-        self.pos_embedding = pos_embedding # SphereGrid or SH
-        
+        self.location_encoder = location_encoder  # SirenNet
+        self.chelsa_encoder = chelsa_encoder  # FF-ResNet
+        self.pos_embedding = pos_embedding  # SphereGrid or SH
+
         self.loss_fn = loss_fn
 
         self.test_cases = test_cases
@@ -77,13 +80,21 @@ class ChelsaCLIPModule(LightningModule):
         self.chelsa_loss_only = chelsa_loss_only
 
         if self.regress_loc:
-            self.loc_regressor = torch.nn.Linear(self.chelsa_encoder.final_transform.out_features, 2)
+            self.loc_regressor = torch.nn.Linear(
+                self.chelsa_encoder.final_transform.out_features, 2
+            )
             self.rec_loss = torch.nn.MSELoss()
         if self.regress_PE:
-            self.PE_regressor = torch.nn.Linear(self.chelsa_encoder.final_transform.out_features, self.location_encoder.layers[0].dim_in)
+            self.PE_regressor = torch.nn.Linear(
+                self.chelsa_encoder.final_transform.out_features,
+                self.location_encoder.layers[0].dim_in,
+            )
             self.rec_loss = torch.nn.MSELoss()
         if self.regress_chelsa:
-            self.chelsa_regressor = torch.nn.Linear(self.chelsa_encoder.final_transform.out_features, self.chelsa_encoder.res_layers[0].in_features)
+            self.chelsa_regressor = torch.nn.Linear(
+                self.chelsa_encoder.final_transform.out_features,
+                self.chelsa_encoder.res_layers[0].in_features,
+            )
             self.rec_loss = torch.nn.MSELoss()
 
         # Note from Sigm? or SatCLIP? paper: We opt for setting ADAM β2 = 0.95 for all our experiments.
@@ -113,7 +124,7 @@ class ChelsaCLIPModule(LightningModule):
 
     def model_step(self, batch, verbose=False, plot_learnability=False):
         if self.hparams.provide_chelsa_similarity_matrix:
-            #lonlat, month, chelsa, similarity = batch
+            # lonlat, month, chelsa, similarity = batch
             raise NotImplementedError()
             pass
         elif self.hparams.future_climatologies:
@@ -121,48 +132,74 @@ class ChelsaCLIPModule(LightningModule):
             similarity = None
         else:
             lonlat, month, chelsa = batch
-            #lonlat, chelsa = batch
+            # lonlat, chelsa = batch
             similarity = None
         if verbose:
-            print("lonlat",lonlat.max(), lonlat.min(), lonlat.mean())
-            print("chelsa",chelsa.max(), chelsa.min(), chelsa.mean())
+            print("lonlat", lonlat.max(), lonlat.min(), lonlat.mean())
+            print("chelsa", chelsa.max(), chelsa.min(), chelsa.mean())
 
         # get features
-        loc = self.pos_embedding(lonlat) # SphereGrid or SH
+        loc = self.pos_embedding(lonlat)  # SphereGrid or SH
         loc = loc.squeeze(dim=1).to(lonlat.device)
         if verbose:
-            print("loc",loc.max(), loc.min(), loc.mean())
+            print("loc", loc.max(), loc.min(), loc.mean())
 
         if self.hparams.future_climatologies:
             # Beside month also append tf scaled to [-1;-0.33;0.33;1] and ssp scaled to [-1;0;1]
-            loc_month = torch.concat([loc,
-            torch.sin(month/12*torch.pi*2).unsqueeze(dim=-1),
-            torch.cos(month/12*torch.pi*2).unsqueeze(dim=-1),
-            ((tf-1.5)/1.5).unsqueeze(dim=-1),
-            (ssp-1).unsqueeze(dim=-1)], dim=-1)
+            loc_month = torch.concat(
+                [
+                    loc,
+                    torch.sin(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+                    torch.cos(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+                    ((tf - 1.5) / 1.5).unsqueeze(dim=-1),
+                    (ssp - 1).unsqueeze(dim=-1),
+                ],
+                dim=-1,
+            )
         else:
             # Append a sin/cos transform of the month to the vector
-            loc_month = torch.concat([loc, torch.sin(month/12*torch.pi*2).unsqueeze(dim=-1),torch.cos(month/12*torch.pi*2).unsqueeze(dim=-1)], dim=-1)
+            loc_month = torch.concat(
+                [
+                    loc,
+                    torch.sin(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+                    torch.cos(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+                ],
+                dim=-1,
+            )
         if verbose:
-            print("loc_month",loc_month.max(), loc_month.min(), loc_month.mean())
-        
-        loc_month_emb = self.location_encoder(loc_month) # SirenNet
+            print("loc_month", loc_month.max(), loc_month.min(), loc_month.mean())
+
+        loc_month_emb = self.location_encoder(loc_month)  # SirenNet
         if self.chelsa_loss_only:
             rec = self.chelsa_regressor(loc_month_emb)
             regress_loss = self.rec_loss(rec, chelsa.float())
-            #self.log("train/loss_chelsa_reg", regress_loss.detach().cpu())
+            # self.log("train/loss_chelsa_reg", regress_loss.detach().cpu())
             return self.regress_chelsa * regress_loss
-        #loc_emb = self.location_encoder(loc)
-        chelsa_emb = self.chelsa_encoder(chelsa) # FF-ResNet or CNN or PCA or more
+        # loc_emb = self.location_encoder(loc)
+        chelsa_emb = self.chelsa_encoder(chelsa)  # FF-ResNet or CNN or PCA or more
         if verbose:
-            print("loc_month_emb",loc_month_emb.max(), loc_month_emb.min(), loc_month_emb.mean())
-            print("chelsa_emb",chelsa_emb.max(), chelsa_emb.min(), chelsa_emb.mean())
+            print(
+                "loc_month_emb",
+                loc_month_emb.max(),
+                loc_month_emb.min(),
+                loc_month_emb.mean(),
+            )
+            print("chelsa_emb", chelsa_emb.max(), chelsa_emb.min(), chelsa_emb.mean())
 
         if hasattr(self.loss_fn, "t_prime"):
             try:
-                loss = self.loss_fn(loc_month_emb, chelsa_emb, similarity, verbose=verbose, l_module=self, plot_learnability=plot_learnability)
+                loss = self.loss_fn(
+                    loc_month_emb,
+                    chelsa_emb,
+                    similarity,
+                    verbose=verbose,
+                    l_module=self,
+                    plot_learnability=plot_learnability,
+                )
             except:
-                loss = self.loss_fn(loc_month_emb, chelsa_emb, similarity, verbose=verbose)
+                loss = self.loss_fn(
+                    loc_month_emb, chelsa_emb, similarity, verbose=verbose
+                )
         else:
             loss = self.loss_fn(loc_month_emb, chelsa_emb, similarity, verbose=verbose)
 
@@ -191,7 +228,6 @@ class ChelsaCLIPModule(LightningModule):
 
         return loss
 
-
     def training_step(self, batch, batch_idx):
         """Perform a single training step on a batch of data from the training set.
 
@@ -200,10 +236,10 @@ class ChelsaCLIPModule(LightningModule):
         :param batch_idx: The index of the current batch.
         :return: A tensor of losses between model predictions and targets.
         """
-        #if batch_idx == 0 :
+        # if batch_idx == 0 :
         #    print("-----------Train verbose -------------")
         loss = self.model_step(batch)
-        #if batch_idx == 0 :
+        # if batch_idx == 0 :
         #    print("-----------End train verbose -------------")
 
         # update and log metrics
@@ -248,15 +284,15 @@ class ChelsaCLIPModule(LightningModule):
                             pe_copy = pickle.loads(pickle.dumps(self.pos_embedding))
                             le_copy = pickle.loads(pickle.dumps(self.location_encoder))
                             case(pe_copy, le_copy, wb, section="val/")
-        
+
         if self.first_epoch:
             self.first_epoch = False
 
-        #if batch_idx == 0 :
+        # if batch_idx == 0 :
         #    print("-----------Val verbose -------------")
-        #loss = self.model_step(batch, plot_learnability=(True if batch_idx == 0 else False))
+        # loss = self.model_step(batch, plot_learnability=(True if batch_idx == 0 else False))
         loss = self.model_step(batch)
-        #if batch_idx == 0 :
+        # if batch_idx == 0 :
         #    print("-----------End val verbose -------------")
 
         # update and log metrics
@@ -296,12 +332,13 @@ class ChelsaCLIPModule(LightningModule):
                             le_copy = pickle.loads(pickle.dumps(self.location_encoder))
                             case(pe_copy, le_copy, wb)
 
-
         loss = self.model_step(batch)
 
         # update and log metrics
         self.test_loss(loss)
-        self.log("test/loss", self.test_loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(
+            "test/loss", self.test_loss, on_step=False, on_epoch=True, prog_bar=True
+        )
 
     def on_test_epoch_end(self):
         """Lightning hook that is called when a test epoch ends."""
@@ -328,7 +365,7 @@ class ChelsaCLIPModule(LightningModule):
 
         :return: A dict containing the configured optimizers and learning-rate schedulers to be used for training.
         """
-        #params = list(self.chelsa_encoder.parameters()) + list(self.location_encoder.parameters()) + [self.t_prime] + [self.b]
+        # params = list(self.chelsa_encoder.parameters()) + list(self.location_encoder.parameters()) + [self.t_prime] + [self.b]
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
@@ -343,24 +380,33 @@ class ChelsaCLIPModule(LightningModule):
             }
         return {"optimizer": optimizer}
 
+
 if __name__ == "__main__":
     emb_size = 32
     # 4096, 8192, 16384, 32768, 65536
     BS, EXPS, W_UPD, DEV = 8192, 1, False, "cuda"
     print("Testing for BS", BS, "- EXPS", EXPS, "- W_UPD", W_UPD, "- DEV", DEV)
 
-    rand_loc = torch.rand(BS, 34).to(DEV) # REPLACE
-    rand_chelsa = torch.rand(BS, 11).to(DEV) # REPLACE
+    rand_loc = torch.rand(BS, 34).to(DEV)  # REPLACE
+    rand_chelsa = torch.rand(BS, 11).to(DEV)  # REPLACE
 
     location_encoder = torch.nn.Linear(34, emb_size)
     chelsa_encoder = torch.nn.Linear(11, emb_size)
 
-    cpm = ChelsaCLIPModule(location_encoder, chelsa_encoder, torch.optim.Adam, None, False).to(DEV)
+    cpm = ChelsaCLIPModule(
+        location_encoder, chelsa_encoder, torch.optim.Adam, None, False
+    ).to(DEV)
 
-    params = list(cpm.chelsa_encoder.parameters()) + list(cpm.location_encoder.parameters()) + [cpm.t_prime] + [cpm.b]
+    params = (
+        list(cpm.chelsa_encoder.parameters())
+        + list(cpm.location_encoder.parameters())
+        + [cpm.t_prime]
+        + [cpm.b]
+    )
     opt = torch.optim.Adam(params=params)
 
     from tqdm import tqdm
+
     for _ in tqdm(range(EXPS)):
         if W_UPD:
             opt.zero_grad()

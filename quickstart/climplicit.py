@@ -15,10 +15,13 @@ class Climplicit(torch.nn.Module):
             num_layers=16,
             dropout=False,
             h_siren=True,
-            residual_connections=True)
+            residual_connections=True,
+        )
         self.pos_embedding = Direct(lon_min=-180, lon_max=180, lat_min=-90, lat_max=90)
 
-        self.location_encoder.load_state_dict(torch.load("climplicit.ckpt", weights_only=True))
+        self.location_encoder.load_state_dict(
+            torch.load("climplicit.ckpt", weights_only=True)
+        )
 
         for name, param in self.location_encoder.named_parameters():
             param.requires_grad = False
@@ -33,15 +36,27 @@ class Climplicit(torch.nn.Module):
             # Get the Climplicit embeddings for four months across the year
             for m in [3, 6, 9, 12]:
                 month = torch.ones(len(coordinates)) * m
-                loc_month = torch.concat([loc, torch.sin(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
-                                          torch.cos(month / 12 * torch.pi * 2).unsqueeze(dim=-1)], dim=-1)
+                loc_month = torch.concat(
+                    [
+                        loc,
+                        torch.sin(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+                        torch.cos(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+                    ],
+                    dim=-1,
+                )
                 res.append(self.location_encoder(loc_month))
             return torch.cat(res, dim=-1)
 
         # If we have a month
         # Append the month to the positional embedding
-        loc_month = torch.concat([loc, torch.sin(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
-                                  torch.cos(month / 12 * torch.pi * 2).unsqueeze(dim=-1)], dim=-1)
+        loc_month = torch.concat(
+            [
+                loc,
+                torch.sin(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+                torch.cos(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+            ],
+            dim=-1,
+        )
         # Return the Climplicit embedding
         return self.location_encoder(loc_month)
 
@@ -49,8 +64,8 @@ class Climplicit(torch.nn.Module):
 if __name__ == "__main__":
     model = Climplicit()
 
-    loc = [8.550155, 47.396702] # Lon/Lat or our office 
-    april = 4                   # April
+    loc = [8.550155, 47.396702]  # Lon/Lat or our office
+    april = 4  # April
     batchsize = 10
 
     # Call with a month

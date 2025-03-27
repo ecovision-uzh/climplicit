@@ -42,25 +42,37 @@ class WeightedRandomWorldSampler(torch.utils.data.Sampler):
         self.num_samples = num_samples
 
         self.num_blocks = (len(weights) // pow(2, 24)) + 1
-        self.block_probabilities = torch.tensor([sum(weights[pow(2, 24)*i:pow(2, 24)*(i+1)])/len(weights) for i in range(self.num_blocks)])
-        #block_probabilities = [p/sum(block_probabilities) for p in block_probabilities]
+        self.block_probabilities = torch.tensor(
+            [
+                sum(weights[pow(2, 24) * i : pow(2, 24) * (i + 1)]) / len(weights)
+                for i in range(self.num_blocks)
+            ]
+        )
+        # block_probabilities = [p/sum(block_probabilities) for p in block_probabilities]
         self.weights = weights
-        self.block_samplers = {i: torch.utils.data.WeightedRandomSampler(
-                                weights = weights[pow(2, 24)*i:pow(2, 24)*(i+1)],
-                                num_samples = int(self.num_samples * self.block_probabilities[i]),
-                                replacement = True)
-                                for i in range(self.num_blocks)}
-        self.block_samplers_iter = {i: iter(self.block_samplers[i]) for i in range(self.num_blocks)}
-        #self.block_samplers = {i: torch.multinomial(torch.tensor(weights[pow(2, 24)*i:pow(2, 24)*(i+1)]),
+        self.block_samplers = {
+            i: torch.utils.data.WeightedRandomSampler(
+                weights=weights[pow(2, 24) * i : pow(2, 24) * (i + 1)],
+                num_samples=int(self.num_samples * self.block_probabilities[i]),
+                replacement=True,
+            )
+            for i in range(self.num_blocks)
+        }
+        self.block_samplers_iter = {
+            i: iter(self.block_samplers[i]) for i in range(self.num_blocks)
+        }
+        # self.block_samplers = {i: torch.multinomial(torch.tensor(weights[pow(2, 24)*i:pow(2, 24)*(i+1)]),
         #                        int(self.num_samples * self.block_probabilities[i] * oversample))
         #                        for i in range(self.num_blocks)}
-                            
 
-        self.block_id_sampler = iter(torch.utils.data.WeightedRandomSampler(
-                                    weights = self.block_probabilities,
-                                    num_samples = self.num_samples,
-                                    replacement = True))
-        #self.block_id_sampler = iter(torch.multinomial(self.block_probabilities, self.num_samples, replacement=True))
+        self.block_id_sampler = iter(
+            torch.utils.data.WeightedRandomSampler(
+                weights=self.block_probabilities,
+                num_samples=self.num_samples,
+                replacement=True,
+            )
+        )
+        # self.block_id_sampler = iter(torch.multinomial(self.block_probabilities, self.num_samples, replacement=True))
 
     def __len__(self) -> int:
         return self.num_samples
@@ -79,18 +91,16 @@ class WeightedRandomWorldSampler(torch.utils.data.Sampler):
 if __name__ == "__main__":
     weights = np.load("/shares/wegner.ics.uzh/CHELSA/input/idx_to_weight.npy")
     num_samples = len(weights)
-    
+
     from time import time
+
     start = time()
-    
+
     sampler = iter(WeightedRandomWorldSampler(weights, num_samples))
 
     del weights
 
     for i in tqdm(range(num_samples)):
         next(sampler)
-        
-    print("Took:", time() - start)
-    
 
-    
+    print("Took:", time() - start)

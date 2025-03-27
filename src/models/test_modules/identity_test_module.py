@@ -12,20 +12,21 @@ from tqdm import tqdm
 import numpy as np
 
 import sys
-sys.path.append('/home/jdolli/sent-sinr/')
+
+sys.path.append("/home/jdolli/sent-sinr/")
 from sesi_utils import bilinear_interpolate
 
-sys.path.append('/home/jdolli/chelsaCLIP/src/utils')
+sys.path.append("/home/jdolli/chelsaCLIP/src/utils")
 from positional_encoding.spheregrid import SphereGridSpatialRelationEncoder
 
+
 class IdentityTestModule(LightningModule):
-    """
-    """
+    """ """
 
     def __init__(
         self,
-        test_cases = None,
-        special_mode = "None",
+        test_cases=None,
+        special_mode="None",
     ):
 
         super().__init__()
@@ -40,12 +41,13 @@ class IdentityTestModule(LightningModule):
         elif special_mode == "SGPlus":
             print("Running SpheregridPlus position embedding")
             self.pos_embedding = SphereGridSpatialRelationEncoder(
-                coord_dim= 2,
-                frequency_num= 64,
-                max_radius= 360,
-                min_radius= 0.0003,
-                freq_init= "geometric",
-                device= "cuda")
+                coord_dim=2,
+                frequency_num=64,
+                max_radius=360,
+                min_radius=0.0003,
+                freq_init="geometric",
+                device="cuda",
+            )
             self.location_encoder = torch.nn.Identity()
 
         self.test_cases = test_cases

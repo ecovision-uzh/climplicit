@@ -24,9 +24,14 @@ print(len(normalization_dict), bio_file_name, normalization_dict[bio_file_name])
 
 for monthly in tqdm(monthly_raster_names):
     for mfn in os.listdir(CHELSA_DIR + "/climatologies/1981-2010/" + monthly):
-        monthly_file_name = CHELSA_DIR + "/climatologies/1981-2010/" + monthly + "/" + mfn
+        monthly_file_name = (
+            CHELSA_DIR + "/climatologies/1981-2010/" + monthly + "/" + mfn
+        )
         monthly_file = rioxarray.open_rasterio(monthly_file_name)
-        normalization_dict[monthly_file_name] = (monthly_file.mean(), monthly_file.std())
+        normalization_dict[monthly_file_name] = (
+            monthly_file.mean(),
+            monthly_file.std(),
+        )
         del monthly_file
 print(len(normalization_dict), monthly_file_name, normalization_dict[monthly_file_name])
 
@@ -35,5 +40,7 @@ for key in normalization_dict.keys():
     normalization_dict[key] = (float(mean), float(std))
 print(normalization_dict[key])
 
-with open(CHELSA_DIR + "/climatologies/1981-2010/" + "normalization_values.json", "w") as f:
+with open(
+    CHELSA_DIR + "/climatologies/1981-2010/" + "normalization_values.json", "w"
+) as f:
     json.dump(normalization_dict, f)

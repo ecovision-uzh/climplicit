@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 import pickle
 
+
 class LearnChelsaDirectlyModule(LightningModule):
     """
     A `LightningModule` implements 8 key methods:
@@ -44,19 +45,21 @@ class LearnChelsaDirectlyModule(LightningModule):
         scheduler,
         compile,
         loss_fn,
-        val_cases = None,
-        test_cases = None,
+        val_cases=None,
+        test_cases=None,
     ):
 
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(logger=False, ignore=["location_encoder", "pos_embedding"])
+        self.save_hyperparameters(
+            logger=False, ignore=["location_encoder", "pos_embedding"]
+        )
 
-        self.location_encoder = location_encoder # SirenNet
-        self.pos_embedding = pos_embedding # SphereGrid or SH
-        
+        self.location_encoder = location_encoder  # SirenNet
+        self.pos_embedding = pos_embedding  # SphereGrid or SH
+
         self.loss_fn = loss_fn
 
         self.test_cases = test_cases
@@ -84,20 +87,24 @@ class LearnChelsaDirectlyModule(LightningModule):
         lonlat, month, chelsa = batch
 
         # get features
-        loc = self.pos_embedding(lonlat) # SphereGrid or SH
+        loc = self.pos_embedding(lonlat)  # SphereGrid or SH
         loc = loc.squeeze(dim=1).to(lonlat.device)
 
         # Append a sin/cos transform of the month to the vector
-        loc_month = torch.concat([loc,
-            torch.sin(month/12*torch.pi*2).unsqueeze(dim=-1),
-            torch.cos(month/12*torch.pi*2).unsqueeze(dim=-1)], dim=-1)
+        loc_month = torch.concat(
+            [
+                loc,
+                torch.sin(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+                torch.cos(month / 12 * torch.pi * 2).unsqueeze(dim=-1),
+            ],
+            dim=-1,
+        )
 
-        pred_chelsa = self.location_encoder(loc_month) # SirenNet
+        pred_chelsa = self.location_encoder(loc_month)  # SirenNet
 
         loss = self.loss_fn(pred_chelsa, chelsa)
 
         return loss
-
 
     def training_step(self, batch, batch_idx):
         """Perform a single training step on a batch of data from the training set.
@@ -171,7 +178,9 @@ class LearnChelsaDirectlyModule(LightningModule):
 
         # update and log metrics
         self.test_loss(loss)
-        self.log("test/loss", self.test_loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(
+            "test/loss", self.test_loss, on_step=False, on_epoch=True, prog_bar=True
+        )
 
     def on_test_epoch_end(self):
         """Lightning hook that is called when a test epoch ends."""
@@ -198,7 +207,7 @@ class LearnChelsaDirectlyModule(LightningModule):
 
         :return: A dict containing the configured optimizers and learning-rate schedulers to be used for training.
         """
-        #params = list(self.chelsa_encoder.parameters()) + list(self.location_encoder.parameters()) + [self.t_prime] + [self.b]
+        # params = list(self.chelsa_encoder.parameters()) + list(self.location_encoder.parameters()) + [self.t_prime] + [self.b]
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
@@ -213,24 +222,33 @@ class LearnChelsaDirectlyModule(LightningModule):
             }
         return {"optimizer": optimizer}
 
+
 if __name__ == "__main__":
     emb_size = 32
     # 4096, 8192, 16384, 32768, 65536
     BS, EXPS, W_UPD, DEV = 8192, 50, True, "cuda"
     print("Testing for BS", BS, "- EXPS", EXPS, "- W_UPD", W_UPD, "- DEV", DEV)
 
-    rand_loc = torch.rand(BS, 34).to(DEV) # REPLACE
-    rand_chelsa = torch.rand(BS, 11).to(DEV) # REPLACE
+    rand_loc = torch.rand(BS, 34).to(DEV)  # REPLACE
+    rand_chelsa = torch.rand(BS, 11).to(DEV)  # REPLACE
 
     location_encoder = torch.nn.Linear(34, emb_size)
     chelsa_encoder = torch.nn.Linear(11, emb_size)
 
-    cpm = ChelsaCLIPModule(location_encoder, chelsa_encoder, torch.optim.Adam, None, False).to(DEV)
+    cpm = ChelsaCLIPModule(
+        location_encoder, chelsa_encoder, torch.optim.Adam, None, False
+    ).to(DEV)
 
-    params = list(cpm.chelsa_encoder.parameters()) + list(cpm.location_encoder.parameters()) + [cpm.t_prime] + [cpm.b]
+    params = (
+        list(cpm.chelsa_encoder.parameters())
+        + list(cpm.location_encoder.parameters())
+        + [cpm.t_prime]
+        + [cpm.b]
+    )
     opt = torch.optim.Adam(params=params)
 
     from tqdm import tqdm
+
     for _ in tqdm(range(EXPS)):
         if W_UPD:
             opt.zero_grad()

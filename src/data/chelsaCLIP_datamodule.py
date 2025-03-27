@@ -63,7 +63,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
         local_multi_sampling: bool = False,
         sampler: str = "default",
         whiten_with_pca: bool = False,
-        months = "march",
+        months="march",
     ) -> None:
         """Initialize a `ChelsaCLIPDataModule`.
 
@@ -82,7 +82,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
         self.transforms = transforms.Compose(
             [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
         )
-        #TODO
+        # TODO
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
@@ -149,29 +149,58 @@ class ChelsaCLIPDataModule(LightningDataModule):
         :param stage: The stage to setup. Either `"fit"`, `"validate"`, `"test"`, or `"predict"`. Defaults to ``None``.
         """
         if self.monthly_arrays is None:
-            #self.var_names = ["clt", "cmi", "hurs", "pet", "pr", "rsds", "sfcWind", "tas", "tasmax", "tasmin", "vpd"]
+            # self.var_names = ["clt", "cmi", "hurs", "pet", "pr", "rsds", "sfcWind", "tas", "tasmax", "tasmin", "vpd"]
             if self.hparams.months == "all":
-                self.months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+                self.months = [
+                    "01",
+                    "02",
+                    "03",
+                    "04",
+                    "05",
+                    "06",
+                    "07",
+                    "08",
+                    "09",
+                    "10",
+                    "11",
+                    "12",
+                ]
             elif self.hparams.months == "seasons":
                 self.months = ["03", "06", "09", "12"]
             elif self.hparams.months == "march":
                 self.months = ["03"]
-            #self.months = ["03", "09"]
-            #self.months = ["03"]
+            # self.months = ["03", "09"]
+            # self.months = ["03"]
             self.monthly_arrays = {}
             print("Loading monthly rasters")
             for month in tqdm(self.months):
-                #self.monthly_arrays[month] = np.load(self.hparams.climatology_dir + month + "_monthly_float16.npy")#, mmap_mode='r')
-                self.monthly_arrays[month] = np.load(self.hparams.climatology_dir + month + "_monthly_float16_land_only.npy")
+                # self.monthly_arrays[month] = np.load(self.hparams.climatology_dir + month + "_monthly_float16.npy")#, mmap_mode='r')
+                self.monthly_arrays[month] = np.load(
+                    self.hparams.climatology_dir
+                    + month
+                    + "_monthly_float16_land_only.npy"
+                )
 
         # load and split datasets only if not loaded already
-        if (stage == "validate" or stage == "fit" or stage == "test") and not self.data_train:
+        if (
+            stage == "validate" or stage == "fit" or stage == "test"
+        ) and not self.data_train:
             self.data_train = ChelsaCLIPDataset(
                 monthly_arrays=self.monthly_arrays,
-                land_coordinates_file=self.hparams.input_dir+("land_coordinates.npy" if self.hparams.use_all_for_training else "land_coordinates_train.npy"),
-                point_to_coord_file=self.hparams.input_dir+("point_to_coord.npy" if self.hparams.use_all_for_training else "point_to_coord_train.npy"),
+                land_coordinates_file=self.hparams.input_dir
+                + (
+                    "land_coordinates.npy"
+                    if self.hparams.use_all_for_training
+                    else "land_coordinates_train.npy"
+                ),
+                point_to_coord_file=self.hparams.input_dir
+                + (
+                    "point_to_coord.npy"
+                    if self.hparams.use_all_for_training
+                    else "point_to_coord_train.npy"
+                ),
                 months=self.months,
-                skip_samples = self.hparams.skip_samples,
+                skip_samples=self.hparams.skip_samples,
                 return_size=self.hparams.return_size,
                 local_multi_sampling=self.hparams.local_multi_sampling,
                 whiten_with_pca=self.hparams.whiten_with_pca,
@@ -188,7 +217,9 @@ class ChelsaCLIPDataModule(LightningDataModule):
                 local_multi_sampling=self.hparams.local_multi_sampling,
                 whiten_with_pca=self.hparams.whiten_with_pca,
             )"""
-            _, self.data_val, _ = torch.utils.data.random_split(self.data_train, [0.9, 0.05, 0.05])
+            _, self.data_val, _ = torch.utils.data.random_split(
+                self.data_train, [0.9, 0.05, 0.05]
+            )
 
         if stage == "test" and not self.data_test:
             """self.data_test = ChelsaCLIPDataset(
@@ -201,7 +232,9 @@ class ChelsaCLIPDataModule(LightningDataModule):
                 local_multi_sampling=self.hparams.local_multi_sampling,
                 whiten_with_pca=self.hparams.whiten_with_pca,
             )"""
-            _, _, self.data_test = torch.utils.data.random_split(self.data_train, [0.9, 0.05, 0.05])
+            _, _, self.data_test = torch.utils.data.random_split(
+                self.data_train, [0.9, 0.05, 0.05]
+            )
 
     def train_dataloader(self) -> DataLoader[Any]:
         """Create and return the train dataloader.
@@ -209,23 +242,28 @@ class ChelsaCLIPDataModule(LightningDataModule):
         :return: The train dataloader.
         """
         if self.hparams.sampler == "rw_samp":
-            weights = np.load(self.hparams.input_dir+"idx_to_weight.npy")
+            weights = np.load(self.hparams.input_dir + "idx_to_weight.npy")
             if self.hparams.skip_samples:
-                weights = weights[::self.hparams.skip_samples]
+                weights = weights[:: self.hparams.skip_samples]
             if not self.hparams.use_all_for_training:
-                raise ValueError("Can't use weighted random sampling with train sub-set. Need to set data.use_all_for_training: true")
+                raise ValueError(
+                    "Can't use weighted random sampling with train sub-set. Need to set data.use_all_for_training: true"
+                )
             sampler = torch.utils.data.WeightedRandomSampler(
                 weights=weights,
                 num_samples=len(self.data_train),
                 replacement=True,
-                generator=None)
+                generator=None,
+            )
             shuffle = False
         elif self.hparams.sampler == "rw_samp_world":
-            weights = np.load(self.hparams.input_dir+"idx_to_weight.npy")
+            weights = np.load(self.hparams.input_dir + "idx_to_weight.npy")
             if self.hparams.skip_samples:
-                weights = weights[::self.hparams.skip_samples]
+                weights = weights[:: self.hparams.skip_samples]
             if not self.hparams.use_all_for_training:
-                raise ValueError("Can't use weighted random sampling with train sub-set. Need to set data.use_all_for_training: true")
+                raise ValueError(
+                    "Can't use weighted random sampling with train sub-set. Need to set data.use_all_for_training: true"
+                )
             sampler = WeightedRandomWorldSampler(weights, len(self.data_train))
             shuffle = False
         else:
@@ -237,8 +275,8 @@ class ChelsaCLIPDataModule(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=shuffle,
-            #collate_fn=self.collate_fn,
-            sampler=sampler
+            # collate_fn=self.collate_fn,
+            sampler=sampler,
         )
 
     def val_dataloader(self) -> DataLoader[Any]:
@@ -254,7 +292,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=True,
-            #collate_fn=self.collate_fn
+            # collate_fn=self.collate_fn
         )
 
     def test_dataloader(self) -> DataLoader[Any]:
@@ -268,7 +306,7 @@ class ChelsaCLIPDataModule(LightningDataModule):
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             shuffle=True,
-            #collate_fn=self.collate_fn
+            # collate_fn=self.collate_fn
         )
 
     def teardown(self, stage: Optional[str] = None) -> None:
@@ -300,4 +338,5 @@ if __name__ == "__main__":
     _ = ChelsaCLIPDataModule(
         climatology_dir="/shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010_numpy/",
         input_dir="/shares/wegner.ics.uzh/CHELSA/input/",
-        batch_size=32000)
+        batch_size=32000,
+    )

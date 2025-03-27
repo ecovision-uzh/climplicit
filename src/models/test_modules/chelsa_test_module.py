@@ -12,8 +12,10 @@ from tqdm import tqdm
 import numpy as np
 
 import sys
-sys.path.append('/home/jdolli/chelsaCLIP/src/utils')
+
+sys.path.append("/home/jdolli/chelsaCLIP/src/utils")
 from positional_encoding.spheregrid import SphereGridSpatialRelationEncoder
+
 
 class CHELSA_Loc_Enc(torch.nn.Module):
     def __init__(self, add_location):
@@ -23,21 +25,39 @@ class CHELSA_Loc_Enc(torch.nn.Module):
         self.add_location = add_location
         if self.add_location:
             self.loc_addendum = SphereGridSpatialRelationEncoder(
-                coord_dim= 2,
-                frequency_num= 64,
-                max_radius= 360,
-                min_radius= 0.0003,
-                freq_init= "geometric",
-                device= "cuda")
+                coord_dim=2,
+                frequency_num=64,
+                max_radius=360,
+                min_radius=0.0003,
+                freq_init="geometric",
+                device="cuda",
+            )
 
         self.monthly_arrays = {}
-        months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+        months = [
+            "01",
+            "02",
+            "03",
+            "04",
+            "05",
+            "06",
+            "07",
+            "08",
+            "09",
+            "10",
+            "11",
+            "12",
+        ]
         months = ["03", "06", "09", "12"]
-        #months = ["03"]
+        # months = ["03"]
         for month in tqdm(months):
-            #self.monthly_arrays[int(month)] = np.load(chelsa_dir + month + "_monthly_float16.npy", mmap_mode="r")
-            self.monthly_arrays[int(month)] = np.load(chelsa_dir + month + "_monthly_float16.npy")
-        self.ras = rasterio.open('/shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010/cmi/CHELSA_cmi_01_1981-2010_V.2.1.tif')
+            # self.monthly_arrays[int(month)] = np.load(chelsa_dir + month + "_monthly_float16.npy", mmap_mode="r")
+            self.monthly_arrays[int(month)] = np.load(
+                chelsa_dir + month + "_monthly_float16.npy"
+            )
+        self.ras = rasterio.open(
+            "/shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010/cmi/CHELSA_cmi_01_1981-2010_V.2.1.tif"
+        )
 
     def forward(self, locs, months):
         # Horribly inefficient, but eh
@@ -49,32 +69,37 @@ class CHELSA_Loc_Enc(torch.nn.Module):
             try:
                 y, x = self.ras.index(lon, lat)
             except:
-                res.append(torch.tensor([-10, -10, -10, -10, -10, -10, -10, -10, -10, -10, -10]))
+                res.append(
+                    torch.tensor(
+                        [-10, -10, -10, -10, -10, -10, -10, -10, -10, -10, -10]
+                    )
+                )
                 continue
             if y == self.monthly_arrays[3].shape[1]:
                 y -= 1
             if x == self.monthly_arrays[3].shape[2]:
                 x -= 1
             try:
-                res.append(torch.tensor(self.monthly_arrays[month.item()][:,y, x]))
+                res.append(torch.tensor(self.monthly_arrays[month.item()][:, y, x]))
             except:
-                res.append(torch.tensor(self.monthly_arrays[3][:,y, x]))
+                res.append(torch.tensor(self.monthly_arrays[3][:, y, x]))
         if self.add_location:
             res = torch.stack(res)
-            return torch.cat([res, self.loc_addendum(locs).to(res.device).reshape(len(res), -1)], dim=1)
+            return torch.cat(
+                [res, self.loc_addendum(locs).to(res.device).reshape(len(res), -1)],
+                dim=1,
+            )
         else:
             return torch.stack(res)
-        
-        
+
 
 class CHELSATestModule(LightningModule):
-    """
-    """
+    """ """
 
     def __init__(
         self,
-        test_cases = None,
-        add_location = False,
+        test_cases=None,
+        add_location=False,
     ):
 
         super().__init__()

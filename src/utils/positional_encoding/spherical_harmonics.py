@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+
 try:
     from spherical_harmonics_ylm import SH as SH_analytic
 except:
@@ -9,6 +10,8 @@ except:
 Spherical Harmonics location encoder.
 Taken from https://github.com/microsoft/satclip/tree/main/satclip/positional_encoding
 """
+
+
 class SphericalHarmonics(nn.Module):
     def __init__(self, legendre_polys: int = 10):
         """
@@ -41,14 +44,16 @@ class SphericalHarmonics(nn.Module):
                 if torch.isnan(y).sum() > 0:
                     print(phi, theta, phi.dtype, theta.dtype, l, m, y)
                     raise ValueError()
-        return torch.stack(Y,dim=-1).float()
+        return torch.stack(Y, dim=-1).float()
+
 
 if __name__ == "__main__":
     from tqdm import tqdm
+
     BS, EXPS, POLYS = (32000, 10, 41)
     print("Testing for BS", BS, "- EXPS", EXPS, "- POLYS", POLYS)
     sh = SphericalHarmonics(legendre_polys=POLYS)
-    lonlat = torch.rand([BS,2]) * 180 - 90  # Random values in [-90,90],[-90,90]
+    lonlat = torch.rand([BS, 2]) * 180 - 90  # Random values in [-90,90],[-90,90]
     for i in tqdm(range(EXPS)):
         out = sh(lonlat)
     print(out[0], len(out[0]))

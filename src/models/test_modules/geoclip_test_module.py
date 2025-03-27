@@ -7,6 +7,7 @@ import wandb
 import pickle
 import sys
 
+
 class DummyEnc(torch.nn.Module):
     def __init__(self, add_multiples):
         super().__init__()
@@ -16,11 +17,11 @@ class DummyEnc(torch.nn.Module):
 
         self.location_encoder = GeoCLIP().location_encoder.to("cuda")
         self.location_encoder.eval()
-    
+
     def forward(self, x):
         if isinstance(self.add_multiples, int):
             emb = self.location_encoder(x)
-            return torch.cat([emb]*self.add_multiples, dim=1)
+            return torch.cat([emb] * self.add_multiples, dim=1)
         else:
             lat = x[:, 1]
             lon = x[:, 0]
@@ -29,20 +30,21 @@ class DummyEnc(torch.nn.Module):
 
 
 class GeoCLIPTestModule(LightningModule):
-    """
-    """
+    """ """
 
     def __init__(
         self,
-        test_cases = None,
-        add_multiples = None,
+        test_cases=None,
+        add_multiples=None,
     ):
 
         super().__init__()
 
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
-        self.save_hyperparameters(logger=False, ignore=["location_encoder", "chelsa_encoder", "pos_embedding"])
+        self.save_hyperparameters(
+            logger=False, ignore=["location_encoder", "chelsa_encoder", "pos_embedding"]
+        )
         self.pos_embedding = torch.nn.Identity()
         self.location_encoder = DummyEnc(add_multiples)
 
@@ -60,6 +62,7 @@ class GeoCLIPTestModule(LightningModule):
                             pe_copy = self.pos_embedding
                             le_copy = self.location_encoder
                             case(pe_copy, le_copy, wb)
+
 
 if __name__ == "__main__":
     loc_enc = DummyEnc(add_multiples=None)

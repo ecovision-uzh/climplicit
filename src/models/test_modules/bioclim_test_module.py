@@ -12,8 +12,10 @@ from tqdm import tqdm
 import numpy as np
 
 import sys
-sys.path.append('/home/jdolli/sent-sinr/')
+
+sys.path.append("/home/jdolli/sent-sinr/")
 from sesi_utils import bilinear_interpolate
+
 
 class BIOCLIM_Loc_Enc(torch.nn.Module):
     def __init__(self):
@@ -25,20 +27,19 @@ class BIOCLIM_Loc_Enc(torch.nn.Module):
         self.raster[torch.isnan(self.raster)] = 0.0
 
     def forward(self, locs):
-        locs[:,1] = (locs[:,1] + 90) / 180
-        locs[:,0] = (locs[:,0] + 180) / 360
-        locs[:,0] = locs[:,0] * 2 - 1
-        locs[:,1] = locs[:,1] * 2 - 1
+        locs[:, 1] = (locs[:, 1] + 90) / 180
+        locs[:, 0] = (locs[:, 0] + 180) / 360
+        locs[:, 0] = locs[:, 0] * 2 - 1
+        locs[:, 1] = locs[:, 1] * 2 - 1
         return bilinear_interpolate(locs.to("cpu"), self.raster).to("cuda")
-        
+
 
 class BIOCLIMTestModule(LightningModule):
-    """
-    """
+    """ """
 
     def __init__(
         self,
-        test_cases = None,
+        test_cases=None,
     ):
 
         super().__init__()
