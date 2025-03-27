@@ -16,7 +16,7 @@ conda env create -f environment.yml
 conda activate climplicit
 python climplicit.py
 ```
-A advanced tutorial on how to use such pretrained embeddings for downstream learning can be found in the [SatCLIP](https://github.com/microsoft/satclip) codebase.
+A tutorial on how to use such pretrained embeddings for downstream learning can be found in the [SatCLIP](https://github.com/microsoft/satclip) codebase.
 
 # Citation
 ...
