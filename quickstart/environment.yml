@@ -1,0 +1,5 @@
+name: climplicit
+channels:
+  - defaults
+dependencies:
+  - pytorch
