@@ -1,15 +1,15 @@
 # path to root directory
 # this requires PROJECT_ROOT environment variable to exist
 # you can replace it with "." if you want the root to be the current working directory
-root_dir: /home/eco02/Desktop
+root_dir: /shares/wegner.ics.uzh/CHELSA
 
 # path to logging directory
-log_dir: /home/eco02/Desktop/climplicit/logs
+log_dir: /shares/wegner.ics.uzh/CHELSA/logs
 
 # path to output directory, created dynamically by hydra
 # path generation pattern is specified in `configs/hydra/default.yaml`
 # use it to store all files generated during the run, like ckpts and metrics
-output_dir: /home/eco02/Desktop/climplicit/out
+output_dir: /shares/wegner.ics.uzh/CHELSA/out
 
 # path to working directory
 work_dir: ${hydra:runtime.cwd}

@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
-months = ["03"]
+#months = ["03"]
 var_names = [
     "cmi",
     "clt",
@@ -22,15 +22,14 @@ var_names = [
     "tasmin",
     "vpd",
 ]
-var_names = ["cmi"]
+#var_names = ["cmi"]
 
-DATA_ROOT = "/home/eco02/Desktop/climplicit/data"
-climatology_dir = DATA_ROOT + "/chelsav2/GLOBAL/climatologies/1981-2010/"
+DATA_ROOT = "<root>"
+climatology_dir = DATA_ROOT + "/climatologies/1981-2010/"
 result_path = DATA_ROOT + "/1981-2010_numpy/"
-try:
-    os.mkdir(result_path)
-except:
-    pass
+os.makedirs(result_path, exist_ok=True)
+
+print("Warning: This script requires a significant amount of RAM (e.g. 100GB).")
 
 # land_coordinates_file = "/shares/wegner.ics.uzh/CHELSA/input/land_coordinates.npy"
 # locs = np.load(land_coordinates_file)
@@ -72,9 +71,11 @@ ys = refras.y
 xs = refras.x
 
 lsm = np.array(refras)[0] > 30000 # Used a proxy for land-sea
-pcs = np.stack(np.where(lsm))
-pcs = np.stack([ys[pcs[0]], xs[pcs[1]]]).T
-np.save(result_path + "point_to_coord.npy", pcs)
+if not os.path.exists(result_path + "point_to_coord.npy"):
+    pcs = np.stack(np.where(~lsm))
+    pcs = np.stack([ys[pcs[0]], xs[pcs[1]]]).T
+    print("Saving point_to_coord.npy:", pcs.shape)
+    np.save(result_path + "point_to_coord.npy", pcs)
 
 all_months = []
 for month in months:
