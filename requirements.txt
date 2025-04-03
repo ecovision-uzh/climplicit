@@ -1,0 +1,15 @@
+pytorch
+hydra
+hydra-colorlog
+lightning
+pyrootutils
+rich
+wandb
+matplotlib
+torcheval
+pandas
+scikit-learn
+rioxarray
+global-land-mask
+ignite
+geopandas
