@@ -15,6 +15,7 @@ dependencies:
   - torcheval
   - pandas
   - scikit-learn
+  - pip
   - pip:
       - rioxarray
       - global-land-mask
