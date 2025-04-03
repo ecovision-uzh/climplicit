@@ -19,9 +19,12 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+data/1981-2010_numpy/
+data/chelsav2/
 develop-eggs/
 dist/
 downloads/
+out/
 eggs/
 .eggs/
 lib/

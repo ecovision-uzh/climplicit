@@ -11,18 +11,17 @@ import matplotlib.pyplot as plt
 
 import sys
 
-sys.path.append("/home/jdolli/chelsaCLIP/src/utils/test_cases/downstreams")
-from air_temp_regression import ATR
-from chelsa_regression import CHR
-from cali_housing_regression import CalR
-from median_income_regression import MIR
-from pop_density_regression import PDR
-from ecobiome_classification import BEC
-from switzerland_glc_sdm import SW_SDM
-from planttraits_regression import PTR
-from loc_month_regression import LMR
-from europe_glc_sdm import EU_SDM
-from global_chelsa_regression import GCR
+from src.utils.test_cases.downstreams.air_temp_regression import ATR
+from src.utils.test_cases.downstreams.chelsa_regression import CHR
+from src.utils.test_cases.downstreams.cali_housing_regression import CalR
+from src.utils.test_cases.downstreams.median_income_regression import MIR
+from src.utils.test_cases.downstreams.pop_density_regression import PDR
+from src.utils.test_cases.downstreams.ecobiome_classification import BEC
+from src.utils.test_cases.switzerland_glc_sdm import SW_SDM
+from src.utils.test_cases.downstreams.planttraits_regression import PTR
+from src.utils.test_cases.downstreams.loc_month_regression import LMR
+from src.utils.test_cases.downstreams.europe_glc_sdm import EU_SDM
+from src.utils.test_cases.downstreams.global_chelsa_regression import GCR
 
 
 class DSTs:

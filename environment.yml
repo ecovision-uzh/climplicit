@@ -1,0 +1,22 @@
+name: climplicit
+channels:
+  - defaults
+  - conda-forge
+  - sfe1ed40
+dependencies:
+  - pytorch
+  - hydra
+  - hydra-colorlog
+  - lightning
+  - pyrootutils
+  - rich
+  - wandb
+  - matplotlib
+  - torcheval
+  - pandas
+  - scikit-learn
+  - pip:
+      - rioxarray
+      - global-land-mask
+      - ignite
+      - geopandas
