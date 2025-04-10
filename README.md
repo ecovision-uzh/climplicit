@@ -5,6 +5,8 @@ The work extends the [SIREN](https://arxiv.org/abs/2006.09661) backbone with res
 
 Note1: This work started out as a contrastive framework inspired by [SatCLIP](https://github.com/microsoft/satclip) and Climplicit only emerged from the ablation of regressing the climatic data directly. Therefore the code structure is still contrastive, and everything is named ChelsaCLIP.
 
+## [ArXiv](https://arxiv.org/abs/2504.05089) and [Project Page](https://ecovision-uzh.github.io/climplicit/)
+
 # Quickstart
 The *quickstart* folder contains the least amount of files required to showcase the usage of the pretrained Climplicit embeddings:
 ```bash
