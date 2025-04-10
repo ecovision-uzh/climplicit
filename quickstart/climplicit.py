@@ -23,6 +23,9 @@ class Climplicit(torch.nn.Module):
             torch.load("climplicit.ckpt", weights_only=True)
         )
 
+        cpkt = torch.load("/shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_018-v18.ckpt", weights_only=True)
+        print(cpkt.keys())
+
         for name, param in self.location_encoder.named_parameters():
             param.requires_grad = False
         print("=> loaded Climplicit weights")
