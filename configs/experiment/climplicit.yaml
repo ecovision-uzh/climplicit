@@ -31,8 +31,8 @@ logger:
 
 data:
   batch_size: 8192
-  climatology_dir: /shares/wegner.ics.uzh/CHELSA/climatologies/1981-2010_numpy/
-  input_dir: /shares/wegner.ics.uzh/CHELSA/input/
+  climatology_dir: <root>/1981-2010_numpy/
+  input_dir: <root>/1981-2010_numpy/
   skip_samples: 1
   use_all_for_training: true
   provide_chelsa_similarity_matrix: false
@@ -127,33 +127,33 @@ model:
     #  mlp_input_len: ${model.location_encoder.dim_out}
     #  use_months: False
     #  verbose : false
-    test/biome_classif:
-      _target_: src.utils.test_cases.downstreams.ecobiome_classification.BEC
-      file_path: '/home/jdolli/chelsaCLIP/src/utils/test_cases/data/ecobiomes_100000.csv'
-      mode: "biomes"
-      iterations: 1
-      linear_probing: True
-      mlp_input_len: ${model.location_encoder.dim_out}
-      use_months: True #True, False
-      biome_tsne: False
-      track_failure_areas: false
-      lake_victoria_map: True
-      verbose : false
-    test/loc_reg:
-      _target_: src.utils.test_cases.downstreams.loc_month_regression.LMR
-      iterations: 1
-      linear_probing: True
-      mlp_input_len: ${model.location_encoder.dim_out}
-      use_months: True #True, False
-      verbose : false
-    test/global_chelsa_reg:
-      _target_: src.utils.test_cases.downstreams.global_chelsa_regression.GCR
-      iterations: 1
-      file_path: '/home/jdolli/chelsaCLIP/src/utils/test_cases/data/global_chelsa_100000.npy'
-      linear_probing: True
-      mlp_input_len: ${model.location_encoder.dim_out}
-      use_months: True #True, False
-      verbose : false
+    #test/biome_classif:
+    #  _target_: src.utils.test_cases.downstreams.ecobiome_classification.BEC
+    #  file_path: '/home/jdolli/chelsaCLIP/src/utils/test_cases/data/ecobiomes_100000.csv'
+    #  mode: "biomes"
+    #  iterations: 1
+    #  linear_probing: True
+    #  mlp_input_len: ${model.location_encoder.dim_out}
+    #  use_months: True #True, False
+    #  biome_tsne: False
+    #  track_failure_areas: false
+    #  lake_victoria_map: True
+    #  verbose : false
+    #test/loc_reg:
+    #  _target_: src.utils.test_cases.downstreams.loc_month_regression.LMR
+    #  iterations: 1
+    #  linear_probing: True
+    #  mlp_input_len: ${model.location_encoder.dim_out}
+    #  use_months: True #True, False
+    #  verbose : false
+    #test/global_chelsa_reg:
+    #  _target_: src.utils.test_cases.downstreams.global_chelsa_regression.GCR
+    #  iterations: 1
+    #  file_path: '/home/jdolli/chelsaCLIP/src/utils/test_cases/data/global_chelsa_100000.npy'
+    #  linear_probing: True
+    #  mlp_input_len: ${model.location_encoder.dim_out}
+    #  use_months: True #True, False
+    #  verbose : false
     #test/sw_sdm:
     #  _target_: src.utils.test_cases.switzerland_glc_sdm.SW_SDM
     #  PO_path: '/shares/wegner.ics.uzh/glc23_data/Switzerland_PO.csv'

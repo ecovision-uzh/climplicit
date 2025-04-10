@@ -6,10 +6,9 @@ import json
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
-from netCDF4 import Dataset
 
 months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
-# months = ["03"]
+#months = ["03"]
 var_names = [
     "cmi",
     "clt",
@@ -23,15 +22,14 @@ var_names = [
     "tasmin",
     "vpd",
 ]
-# var_names = ["cmi"]
+#var_names = ["cmi"]
 
-CHELSA_DIR = "/shares/wegner.ics.uzh/CHELSA/"
-climatology_dir = CHELSA_DIR + "climatologies/1981-2010/"
-result_path = CHELSA_DIR + "climatologies/1981-2010_numpy/"
-try:
-    os.mkdir(result_path)
-except:
-    pass
+DATA_ROOT = "<root>"
+climatology_dir = DATA_ROOT + "/climatologies/1981-2010/"
+result_path = DATA_ROOT + "/1981-2010_numpy/"
+os.makedirs(result_path, exist_ok=True)
+
+print("Warning: This script requires a significant amount of RAM (e.g. 100GB).")
 
 # land_coordinates_file = "/shares/wegner.ics.uzh/CHELSA/input/land_coordinates.npy"
 # locs = np.load(land_coordinates_file)
@@ -67,11 +65,24 @@ std = np.array(
     ]
 )
 
+refras_file_name = climatology_dir + "cmi/CHELSA_cmi_03_1981-2010_V.2.1.tif"
+refras = rioxarray.open_rasterio(refras_file_name, cache=False)
+ys = refras.y
+xs = refras.x
+
+lsm = np.array(refras)[0] > 30000 # Used a proxy for land-sea
+if not os.path.exists(result_path + "point_to_coord.npy"):
+    pcs = np.stack(np.where(~lsm))
+    pcs = np.stack([ys[pcs[0]], xs[pcs[1]]]).T
+    print("Saving point_to_coord.npy:", pcs.shape)
+    np.save(result_path + "point_to_coord.npy", pcs)
+
 all_months = []
 for month in months:
-    arrays = []
-    raster = {}
-    for var in var_names:
+    float16_nps = []
+    print("Month:", month)
+    for i in tqdm(range(len(var_names))):
+        var = var_names[i]
         if var == "pet":
             raster_file_name = (
                 climatology_dir
@@ -101,24 +112,16 @@ for month in months:
                 + "_1981-2010_V.2.1.tif"
             )
 
-        raster[var] = rioxarray.open_rasterio(raster_file_name, cache=False)
+        raster = rioxarray.open_rasterio(raster_file_name, cache=False)
         if var == "clt":
-            raster[var] = raster[var].reindex_like(raster["cmi"], method="nearest")
-    lsm = np.array(raster["cmi"])[0] > 30000
-    # print(lsm.sum(), "values being masked in month", month)
-    print("Month:", month)
+            raster = raster.reindex_like(refras, method="nearest")
 
-    def convert_to_float16_np(name, i):
-        as_np = raster[name][0].to_numpy()
-        as_np = as_np - mean[i, 0]
-        as_np = as_np / std[i, 0]
-        return as_np.astype("float16")
-        # return as_np[~lsm]
+        raster = raster[0].to_numpy()
+        raster = raster - mean[i, 0]
+        raster = raster / std[i, 0]
+        raster = raster.astype("float16")
 
-    float16_nps = []
-    for i in tqdm(range(len(var_names))):
-        var = var_names[i]
-        float16_nps.append(convert_to_float16_np(var, i))
+        float16_nps.append(raster)
 
     res = np.stack(float16_nps)
     print("Final size:", res.shape)

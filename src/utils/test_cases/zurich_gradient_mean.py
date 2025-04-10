@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 
 import sys
 
-sys.path.append("/home/jdolli/chelsaCLIP/src/utils/test_cases")
-from util_datasets import *
+from src.utils.test_cases.util_datasets import *
 
 
 class ZGM:

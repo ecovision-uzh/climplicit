@@ -13,14 +13,8 @@ from sklearn.decomposition import PCA
 
 import sys
 
-sys.path.append("/home/jdolli/chelsaCLIP/src/utils/test_cases")
-from util_datasets import *
-
-sys.path.append("/home/jdolli/chelsaCLIP/src/models/components")
-from residual_net import *
-
-sys.path.append("/home/jdolli/chelsaCLIP/src/utils/test_cases")
-from util_datasets import *
+from src.utils.test_cases.util_datasets import *
+from src.models.components.residual_net import *
 
 from torch import nn
 

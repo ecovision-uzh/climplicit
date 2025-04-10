@@ -1,4 +1,4 @@
-name: climplicit
+name: climplicit-quickstart
 channels:
   - defaults
 dependencies:
