@@ -6,6 +6,7 @@ src/utils/test_cases/data/
 *.tif
 *.out
 
+quickstart/create_climplicit_ckpt.ipynb
 scripts/junkyard.ipynb
 
 # Byte-compiled / optimized / DLL files

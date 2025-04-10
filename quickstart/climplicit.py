@@ -1,11 +1,57 @@
 import torch
 
 from direct import Direct
-from loc_encoder import SirenNet
+from siren import SirenNet
+
+VAR_NAMES = [
+    "cmi",
+    "clt",
+    "hurs",
+    "pet",
+    "pr",
+    "rsds",
+    "sfcWind",
+    "tas",
+    "tasmax",
+    "tasmin",
+    "vpd",
+]
+
+CHELSA_MEAN = torch.tensor(
+    [
+        [-264.1493656],
+        [3912.44628016],
+        [5921.65964573],
+        [9385.47468266],
+        [697.03653109],
+        [15219.37926928],
+        [3498.8511804],
+        [2819.56006368],
+        [2864.08583811],
+        [2773.46759638],
+        [8039.37322797],
+    ]
+).T
+
+CHELSA_STD = torch.tensor(
+    [
+        [1042.67560332],
+        [1767.94018571],
+        [1185.91587823],
+        [6639.79069994],
+        [883.56243405],
+        [7843.49167037],
+        [1637.09237995],
+        [174.43791946],
+        [181.69448751],
+        [167.07485901],
+        [7516.98198719],
+    ]
+).T
 
 
 class Climplicit(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, return_chelsa=False):
         super().__init__()
 
         self.location_encoder = SirenNet(
@@ -19,16 +65,17 @@ class Climplicit(torch.nn.Module):
         )
         self.pos_embedding = Direct(lon_min=-180, lon_max=180, lat_min=-90, lat_max=90)
 
-        self.location_encoder.load_state_dict(
+        self.chelsa_regressor = torch.nn.Linear(256, 11)
+
+        self.load_state_dict(
             torch.load("climplicit.ckpt", weights_only=True)
         )
 
-        cpkt = torch.load("/shares/wegner.ics.uzh/CHELSA/checkpoints/epoch_018-v18.ckpt", weights_only=True)
-        print(cpkt.keys())
-
-        for name, param in self.location_encoder.named_parameters():
+        for name, param in self.named_parameters():
             param.requires_grad = False
         print("=> loaded Climplicit weights")
+
+        self.return_chelsa = return_chelsa
 
     def forward(self, coordinates, month=None):
         # Apply the positional embedding
@@ -47,7 +94,11 @@ class Climplicit(torch.nn.Module):
                     ],
                     dim=-1,
                 )
-                res.append(self.location_encoder(loc_month))
+                x = self.location_encoder(loc_month)
+                if self.return_chelsa:
+                    x = self.chelsa_regressor(x)
+                    x = x * CHELSA_STD + CHELSA_MEAN
+                res.append(x)
             return torch.cat(res, dim=-1)
 
         # If we have a month
@@ -61,7 +112,11 @@ class Climplicit(torch.nn.Module):
             dim=-1,
         )
         # Return the Climplicit embedding
-        return self.location_encoder(loc_month)
+        x = self.location_encoder(loc_month)
+        if self.return_chelsa:
+            x = self.chelsa_regressor(x)
+            x = x * CHELSA_STD + CHELSA_MEAN
+        return x
 
 
 if __name__ == "__main__":
@@ -77,3 +132,8 @@ if __name__ == "__main__":
 
     # Call without month
     print("Shape without month:", model(torch.tensor([loc] * batchsize)).shape)
+
+    # Return the CHELSA reconstruction instead of Climplicit embeddings
+    model = Climplicit(return_chelsa=True)
+    print("Shape of CHELSA reconstruction with month:", model(torch.tensor([loc] * batchsize), month).shape)
+
