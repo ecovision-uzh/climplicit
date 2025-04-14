@@ -1,6 +1,6 @@
 
 # Climplicit: Climatic Implicit Embeddings for Global Ecological Tasks
-This repository contains the code for [**Climplicit: Climatic Implicit Embeddings for Global Ecological Tasks**](*).
+This repository contains the code for [**Climplicit: Climatic Implicit Embeddings for Global Ecological Tasks**](https://arxiv.org/abs/2504.05089).
 The work extends the [SIREN](https://arxiv.org/abs/2006.09661) backbone with residual connections (**ReSIREN**) and trains it on the dense and global climatic raster [CHELSA](https://chelsa-climate.org/). The code uses the [Pytorch Lightning](https://lightning.ai/docs/pytorch/stable/) framework with [Hydra](https://hydra.cc/docs/intro/).
 
 Note1: This work started out as a contrastive framework inspired by [SatCLIP](https://github.com/microsoft/satclip) and Climplicit only emerged from the ablation of regressing the climatic data directly. Therefore the code structure is still contrastive, and everything is named ChelsaCLIP.
