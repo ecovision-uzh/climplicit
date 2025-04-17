@@ -63,17 +63,10 @@ class Climplicit(torch.nn.Module):
             h_siren=True,
             residual_connections=True,
         )
+        
         self.pos_embedding = Direct(lon_min=-180, lon_max=180, lat_min=-90, lat_max=90)
 
-        self.chelsa_regressor = torch.nn.Linear(256, 11)
-
-        self.load_state_dict(
-            torch.load("climplicit.ckpt", weights_only=True)
-        )
-
-        for name, param in self.named_parameters():
-            param.requires_grad = False
-        print("=> loaded Climplicit weights")
+        self.chelsa_regressor = torch.nn.Linear(256, 11)        
 
         self.return_chelsa = return_chelsa
 
@@ -120,7 +113,11 @@ class Climplicit(torch.nn.Module):
 
 
 if __name__ == "__main__":
-    model = Climplicit()
+    model = Climplicit(return_chelsa=False)
+
+    model.load_state_dict(
+        torch.load("climplicit.ckpt", weights_only=True)
+    )
 
     loc = [8.550155, 47.396702]  # Lon/Lat or our office
     april = 4  # April
@@ -128,12 +125,12 @@ if __name__ == "__main__":
 
     # Call with a month
     month = torch.ones(batchsize) * april
-    print("Shape with month:", model(torch.tensor([loc] * batchsize), month).shape)
+    print("Output shape with month:", model(torch.tensor([loc] * batchsize), month).shape)
 
     # Call without month
-    print("Shape without month:", model(torch.tensor([loc] * batchsize)).shape)
+    print("Output shape without month:", model(torch.tensor([loc] * batchsize)).shape)
 
     # Return the CHELSA reconstruction instead of Climplicit embeddings
-    model = Climplicit(return_chelsa=True)
-    print("Shape of CHELSA reconstruction with month:", model(torch.tensor([loc] * batchsize), month).shape)
+    model.return_chelsa=True
+    print("Output shape of CHELSA reconstruction with month:", model(torch.tensor([loc] * batchsize), month).shape)
 
