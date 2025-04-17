@@ -3,6 +3,8 @@ import torch
 from direct import Direct
 from siren import SirenNet
 
+from huggingface_hub import PyTorchModelHubMixin
+
 VAR_NAMES = [
     "cmi",
     "clt",
@@ -50,7 +52,7 @@ CHELSA_STD = torch.tensor(
 ).T
 
 
-class Climplicit(torch.nn.Module):
+class Climplicit(torch.nn.Module, PyTorchModelHubMixin):
     def __init__(self, return_chelsa=False):
         super().__init__()
 
@@ -63,7 +65,7 @@ class Climplicit(torch.nn.Module):
             h_siren=True,
             residual_connections=True,
         )
-        
+
         self.pos_embedding = Direct(lon_min=-180, lon_max=180, lat_min=-90, lat_max=90)
 
         self.chelsa_regressor = torch.nn.Linear(256, 11)        
@@ -113,11 +115,7 @@ class Climplicit(torch.nn.Module):
 
 
 if __name__ == "__main__":
-    model = Climplicit(return_chelsa=False)
-
-    model.load_state_dict(
-        torch.load("climplicit.ckpt", weights_only=True)
-    )
+    model = Climplicit(return_chelsa=False).from_pretrained("Jobedo/climplicit")
 
     loc = [8.550155, 47.396702]  # Lon/Lat or our office
     april = 4  # April
