@@ -117,7 +117,7 @@
       <div class="column is-four-fifths">
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
-          <p>
+            <p>
             Deep learning on climatic data holds potential for macroecological applications. However, its adoption remains limited among scientists outside the deep learning community due to storage, compute, and technical expertise barriers. To address this, we introduce Climplicit, a spatio-temporal geolocation encoder pretrained to generate implicit climatic representations anywhere on Earth. By bypassing the need to download raw climatic rasters and train feature extractors, our model uses ×3500 less disk space and significantly reduces computational needs for downstream tasks. We evaluate our Climplicit embeddings on biomes classification, species distribution modeling, and plant trait regression. We find that linear probing our Climplicit embeddings consistently performs better or on par with training a model from scratch on downstream tasks and overall better than alternative geolocation encoding models.
           </p>
         </div>
@@ -129,7 +129,19 @@
 
 
 
-
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+        <h2 class="title is-3">Summary</h2>
+          <ul>
+             <li> <b>Climplicit</b> encodes global climatic data (60GB) in a small-scale spatio-temporal network (15MB). It can be used for downstream task learning by freezing the network and training a probe on the embeddings.</li><br />
+             
+             <li> The backbone of Climplicit is a novel residual extension to the <a href="https://arxiv.org/abs/2006.09661">Siren</a> network dubbed <b>ReSIREN</b>. ReSIREN improves the scaling capabilities of the network to more layers.</li><br />
+             
+             <li>We compare the embeddings of Climplicit with other pretrained geolocation embeddings and models trained from scratch on climatic data and geo-coordinates. When using a single layer as probe on the three tasks of <b>biome classification</b>, <b>species distribution modeling</b> and <b>plant trait regression</b>, Climpicit performs competitive or better. When using a small MLP as probe, Climplicit outperforms all other methods.</li>
+             
+            </ul>
+  </div>
+</section>
 
 
 
@@ -146,6 +158,10 @@
     </div>
   </section>
 <!--End paper poster -->
+
+
+
+
 
 
 <!--BibTex citation -->

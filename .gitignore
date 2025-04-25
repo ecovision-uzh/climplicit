@@ -8,6 +8,7 @@ src/utils/test_cases/data/
 
 quickstart/create_climplicit_ckpt.ipynb
 scripts/junkyard.ipynb
+scripts/test_reconstruction/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
