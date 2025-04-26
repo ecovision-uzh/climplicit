@@ -8,7 +8,13 @@ Note: This work started out as a contrastive framework inspired by [SatCLIP](htt
 ## [ArXiv](https://arxiv.org/abs/2504.05089) and [Project Page](https://ecovision-uzh.github.io/climplicit/)
 
 # Quickstart
-The *quickstart* folder contains the least amount of files required to showcase the usage of the pretrained Climplicit embeddings:
+Update: You can now use [rshf](https://github.com/mvrl/rshf) to conveniently load the model:
+```python
+from rshf.climplicit import Climplicit
+model = Climplicit({"return_chelsa": False})
+print(model)
+```
+If you want to have direct access to the model architecture, you can use the *quickstart* folder which contains the least amount of files required to showcase the usage of the pretrained Climplicit embeddings:
 ```bash
 git clone https://github.com/ecovision-uzh/climplicit.git
 cd climplicit/quickstart
