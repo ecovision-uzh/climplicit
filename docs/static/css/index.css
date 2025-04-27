@@ -13,6 +13,13 @@ body {
     margin-bottom: 5px;
 }
 
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+
 .dnerf {
   font-variant: small-caps;
 }
