@@ -81,6 +81,16 @@
                       </a>
                     </span>
 
+                <!-- Slides PDF link -->
+                <span class="link-block">
+                  <a href="static/pdfs/82_slides.pdf" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="fa-solid fa-person-chalkboard"></i>
+                    </span>
+                    <span>Slides</span>
+                  </a>
+                </span>
+
                   <!-- Github link -->
                   <span class="link-block">
                     <a href="https://github.com/ecovision-uzh/climplicit" target="_blank"
@@ -141,8 +151,63 @@ Deep learning on climatic data holds potential for macroecological applications.
              <li>We provide the codebase to run the CHELSA pretraining or only use the pretrained embeddings. The codebase furthermore contains the code for running the various downstream evaluations that we compared the models on.</li>
              
             </ul>
+          <img src="static/images/ReSiren.png" alt="ReSIREN Architecture"/>
   </div>
 </section>
+
+<!-- Image carousel -->
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Results</h2>
+      <div id="teaser-carousel" class="carousel results-carousel">
+       <div class="item">
+        <!-- Your image here -->
+        <img src="static/images/main_res.png" alt="Single-Layer Probing"/>
+        <h2 class="subtitle has-text-centered">
+          Single-layer probing on diverse geolocation representations. Mean and standard
+          deviation of ten random initializations of the single-layer probe. <b>Best</b>. <u>Second best</u>.
+        </h2>
+      </div>
+      <div class="item">
+        <!-- Your image here -->
+        <img src="static/images/ablation_res.png" alt="Ablations"/>
+        <h2 class="subtitle has-text-centered">
+          Ablation analysis with single-layer probing. Mean and standard deviation of ten
+          random initializations of the single-layer probe. <b>Best</b>. <u>Second best</u>.
+        </h2>
+      </div>
+      <div class="item">
+        <!-- Your image here -->
+        <img src="static/images/non_eco_res.png" alt="Single-Layer Probing Non-Ecological"/>
+        <h2 class="subtitle has-text-centered">
+          Single-layer probing on diverse geolocation representations for non-ecological down-
+          stream tasks. Mean and standard deviation of ten random initializations of the single-layer
+          probe. <b>Best</b>. <u>Best pretrained geolocation representation</u>.
+        </h2>
+      </div>
+      <div class="item">
+        <!-- Your image here -->
+        <img src="static/images/mlp_res.png" alt="MLP Probing"/>
+        <h2 class="subtitle has-text-centered">
+          MLP probing on diverse geolocation representations. Mean and standard deviation
+          of ten random initializations of the linear probe. <b>Best</b>. <u>Second best</u>.
+        </h2>
+      </div>
+      <div class="item">
+        <!-- Your image here -->
+        <img src="static/images/scaling_res.png" alt="Scaling Results"/>
+        <h2 class="subtitle has-text-centered">
+          Comparison of the scaling behavior of ReSIREN compared to SIREN. Generally,
+          ReSIREN performs worse at few layers, but outperforms and scales better with more layers
+          in exchange for an increase in training time.
+        </h2>
+      </div>
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
 
 
 <!-- Paper poster -->
@@ -159,7 +224,16 @@ Deep learning on climatic data holds potential for macroecological applications.
   </section>
 <!--End paper poster -->
 
-
+<!-- Paper slides -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title">Slides</h2>
+      <iframe  src="static/pdfs/82_slides.pdf" width="80%" height="700"></iframe>
+      </div>
+    </div>
+  </section>
+<!--End paper slides -->
 
 
 
