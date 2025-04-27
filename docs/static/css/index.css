@@ -14,11 +14,7 @@ body {
 }
 
 .center {
-  position: relative;
-  left: auto;
-  top: auto;
-  transform: none;
-  object-fit: fit;
+  text-align: center;
 }
 
 .dnerf {
