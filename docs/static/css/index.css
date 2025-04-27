@@ -14,10 +14,11 @@ body {
 }
 
 .center {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 50%;
+  position: relative;
+  left: auto;
+  top: auto;
+  transform: none;
+  object-fit: fit;
 }
 
 .dnerf {
